@@ -43,16 +43,6 @@ The included `submit.sh` script can be used to run Nextflow as a cluster job. Ju
 
 _NOTE:_ This only runs the parent Nextflow process as a cluster job; Nextflow already submits its processes as cluster jobs themselves as per configurations. 
 
-# Contents
-
-- `main.nf`: main Nextflow pipeline file
-
-- `nextflow.config`: Nextflow configuration file
-
-- `bin`: directory for scripts to use inside the Nextflow pipeline; its contents will be prepended to your `PATH` when pipeline tasks are executed
-
-- `Makefile`: shortcuts to common pipeline actions
-
 # Software Requirements
 
 - Java 8 (Nextflow)
