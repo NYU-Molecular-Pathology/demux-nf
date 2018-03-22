@@ -90,17 +90,60 @@ pcnt_perfect_barcode_plot <- ggplot(lane_sample_summary, aes(x = Sample, y = pcn
 ```
 
 ```{r unknown_barcodes}
-# from the HTML; this does not get imported correctly, so do not use it right now
-# 4
-# top_unknown_barcodes_colnames <- c("Lane", "Count", "Sequence", "Lane", "Count", "Sequence", "Lane", 
-# "Count", "Sequence", "Lane", "Count", "Sequence")
+top_unknown_barcodes_colnames <- c("Lane", "Count", "Sequence", "Lane", "Count", "Sequence", "Lane",
+"Count", "Sequence", "Lane", "Count", "Sequence")
+
 # clean up colnames
-# colnames(top_unknown_barcodes_df) <-gsub(pattern = "\\s", replacement = "", x = colnames(top_unknown_barcodes_df))
-# unknown_barcodes_numeric_cols <- c()
+colnames(top_unknown_barcodes_df) <-gsub(pattern = "\\s", replacement = "", x = colnames(top_unknown_barcodes_df))
+unknown_barcodes_numeric_cols <- c()
 # top_unknown_barcodes_df
+
+# reformat the table
+#       Lane             Count          Sequence              Lane   Count          Sequence    Lane             Count
+# 1        1         3,336,792 GGGGGGGG+AGATCTCG                 2 760,402 GGGGTGGG+AGATCTCG       3           922,070
+# 2     <NA>              <NA>              <NA>              <NA>    <NA>              <NA>    <NA>              <NA>
+# 3  515,685 GGGGAGGG+AGATCTCG           520,439 GAGGAGGG+AGATCTCG 459,945 TTTTTTTT+AGATCTCG 478,925 GAGGGGGG+AGATCTCG
+# 4  374,624 GGGGTGGG+AGATCTCG           473,538 GGGGGGGG+AGATCTCG 345,726 GGTTTGGG+AGATCTCG 462,219 GGGGTGGG+AGATCTCG
+# 5  269,334 AAAAAAAA+AGATCTCG           442,604 GTGGTGGG+AGATCTCG 343,476 GTTTTTTT+AGATCTCG 393,851 GTTTTGTT+AGATCTCG
+# 6  268,100 GAGGGGGG+AGATCTCG           417,707 GGGGAGGG+AGATCTCG 326,858 GTTTTTTG+AGATCTCG 347,664 TTTTTTTT+AGATCTCG
+# 7  234,356 GTTTTTTT+AGATCTCG           411,543 GAGGTGGG+AGATCTCG 286,322 GTTTTGTG+AGATCTCG 284,394 GAGGTGGG+AGATCTCG
+# 8  225,582 TTTTTTTT+AGATCTCG           361,425 GTTTTGTT+AGATCTCG 248,865 GTTTTGTT+AGATCTCG 281,824 GGGGGGTG+AGATCTCG
+# 9  221,538 GGGTGGGG+AGATCTCG           341,208 GAGGGGGG+AGATCTCG 230,200 GGGGGGTG+AGATCTCG 262,291 GTTTTTTT+AGATCTCG
+# 10 186,256 GTTTTGTT+AGATCTCG           291,075 TTTTTTTT+AGATCTCG 217,361 GGTTTGTG+AGATCTCG 246,754 GGGGAGGG+AGATCTCG
+# 11 179,080 GAGGTGGG+AGATCTCG           244,646 GGGGTGTG+AGATCTCG 182,112 GGGGGGGT+AGATCTCG 170,472 GTTTTGTG+AGATCTCG
+
+
+num_lanes <- sum(colnames(top_unknown_barcodes_df) == "Lane")
+lane_col_index <- which(colnames(top_unknown_barcodes_df) == "Lane")
+top_unknown_barcodes_df[1,]
+
+
+top_unknown_barcodes_df2 <- top_unknown_barcodes_df[seq(3, nrow(top_unknown_barcodes_df)),]
+
+
+for(i in seq(num_lanes)){
+    insertion_index <- lane_col_index[i]
+
+    print(i)
+    old_cols <- names(top_unknown_barcodes_df2)
+    print(old_cols)
+    print("inserted col:")
+
+    # insert a column with the Lane value
+    top_unknown_barcodes_df2 <- as.data.frame(append(x = top_unknown_barcodes_df2, values = i, after = insertion_index - 1 ))
+    
+    # shift the colnames back; move the new colname to the right end
+    left_names <- names(top_unknown_barcodes_df2)[0:(insertion_index - 1)]
+    right_names <- names(top_unknown_barcodes_df2)[ (insertion_index + 1):length(names(top_unknown_barcodes_df2)) ]
+    inserted_name <- names(top_unknown_barcodes_df2)[insertion_index]
+    names(top_unknown_barcodes_df2) <- c(left_names, right_names, inserted_name)
+}
+
+top_unknown_barcodes_df <- rbind(top_unknown_barcodes_df[1,], setNames(object = top_unknown_barcodes_df2[, seq(ncol(top_unknown_barcodes_df))], nm = names(top_unknown_barcodes_df) ))
+
 ```
 
-```{r top_barcodes}
+```{r top_barcodes, eval=FALSE}
 # dir with demultiplexing output
 demult_dir <- "Unaligned" # 170602_NB501073_0012_AHCKYCBGX2/Data/Intensities/BaseCalls/Unaligned
 stats_dir <- file.path(demult_dir, "Stats")
