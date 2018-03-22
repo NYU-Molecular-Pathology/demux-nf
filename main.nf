@@ -130,25 +130,35 @@ process fastqc {
 
 
 // currently broken on phoenix ??
-process multiqc {
-    tag { "${output_dir}" }
-    publishDir "${params.output_dir}/multiqc", mode: 'copy', overwrite: true
-    executor "local"
-
-    input:
-    val(items) from bcl2fastq_output.mix(fastqc_fastqs)
-                                            .collect() // force it to wait for all steps to finish
-    file(output_dir) from Channel.fromPath("${params.output_dir}")
-
-    output:
-    file "multiqc_report.html" into multiqc_report_html
-    file "multiqc_data"
-
-    script:
-    """
-    multiqc "${output_dir}"
-    """
-}
+// process multiqc {
+//     tag { "${output_dir}" }
+//     publishDir "${params.output_dir}/multiqc", mode: 'copy', overwrite: true
+//     executor "local"
+//
+//     input:
+//     val(items) from bcl2fastq_output.mix(fastqc_fastqs)
+//                                             .collect() // force it to wait for all steps to finish
+//     file(output_dir) from Channel.fromPath("${params.output_dir}")
+//
+//     output:
+//     file "multiqc_report.html" into multiqc_report_html
+//     file "multiqc_data"
+//
+//     script:
+//     """
+//     echo \$PATH
+//     echo \${PYTHONPATH:-"not set"}
+//     echo \${PYTHONHOME:-"not set"}
+//     module list
+//
+//     python --version
+//     which python
+//
+//     which multiqc
+//     multiqc --version
+//     multiqc "${output_dir}"
+//     """
+// }
 
 process demultiplexing_report {
     tag { "${template_dir}" }
@@ -214,7 +224,7 @@ workflow.onComplete {
             // files from process channels
             attach samplesheet_copy2.mix(demultiplex_stats_html)
                                     .mix(demultiplexing_report_html)
-                                    .mix(multiqc_report_html)
+                                    // .mix(multiqc_report_html)
                                     .toList().getVal()
             subject "[${params.workflow_label}] ${status}: ${params.project}"
             body
