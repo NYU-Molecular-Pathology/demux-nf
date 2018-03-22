@@ -16,17 +16,10 @@ log.info "* Basecalls dir:   ${params.basecalls_dir}"
 log.info "* Output dir:      ${params.output_dir} "
 log.info "* Samplesheet:     ${params.samplesheet}"
 
-// steps to perform:
-// - demultiplex
-// - fastqc
-// - multiqc
-// - custom report
-// - add to run index db TODO: this!
-// - email output
-
 
 Channel.fromPath( params.samplesheet ).set { samplesheet_input }
-Channel.fromPath( params.run_dir ).into { run_dir; run_dir2 }
+// Channel.fromPath( params.run_dir ).into { run_dir; run_dir2 }
+Channel.from( "${params.run_dir}" ).into { run_dir; run_dir2 } // dont stage run dir for safety reasons
 Channel.fromPath( params.report_template_dir ).set { report_template_dir }
 
 process validate_RunParamsXML {
@@ -35,7 +28,7 @@ process validate_RunParamsXML {
     publishDir "${params.output_dir}/", mode: 'copy', overwrite: true
 
     input:
-    file(run_dir) from run_dir2
+    val(run_dir) from run_dir2
 
     output:
     file("RunParameters.xml") into run_params_xml
@@ -72,7 +65,7 @@ process bcl2fastq {
     publishDir "${params.output_dir}/", mode: 'copy', overwrite: true
 
     input:
-    set file(samplesheet), file(run_dir) from samplesheet_copy.combine(run_dir)
+    set file(samplesheet), val(run_dir) from samplesheet_copy.combine(run_dir)
 
     output:
     file("Unaligned") into bcl2fastq_output
@@ -134,13 +127,6 @@ process fastqc {
     script:
     output_html = "${fastq}".replaceFirst(/.fastq.gz$/, "_fastqc.html")
     output_zip = "${fastq}".replaceFirst(/.fastq.gz$/, "_fastqc.zip")
-    // if (! "${fastq}".contains("Undetermined_")){
-    //     """
-    //     echo "[fastqc] ${fastq}"
-    //     """
-    // } else {
-    //     log.info "skipping ${fastq}"
-    // }
     """
     fastqc -o . "${fastq}"
     """
