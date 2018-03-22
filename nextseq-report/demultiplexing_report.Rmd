@@ -1,0 +1,271 @@
+---
+title: "Demultiplexing Report"
+author: "`r system('whoami', intern = TRUE)`"
+date: "`r format(Sys.time(), '%B %d, %Y')`"
+output:
+  html_document:
+    css: styles.css
+    keep_md: yes
+    number_sections: true
+    toc: true
+    toc_depth: 3
+---
+<!-- Setup the R code to be used in R Markdown generation throughout the report -->
+```{r setup, include=FALSE} 
+#    df_print: paged
+# {.tabset} # .tabset-fade .tabset-pills
+    # toc_float: true
+# ~~~~~ SETTINGS ~~~~~ #
+knitr::opts_chunk$set(echo = FALSE)
+
+# ~~~~~ LOAD PACKAGES ~~~~~ #
+library("ggplot2")
+library("XML")
+library("plyr")
+library("knitr")
+# library("DT")
+
+# ~~~~~ CUSTOM FUNCTIONS ~~~~~ #
+mycat <- function(text){
+    # function for formatting text in the report
+    cat(gsub(pattern = "\n", replacement = "  \n", x = text))
+}
+
+make_numeric <- function(x){
+    # convert a vector of values such as "291,196" to numeric values
+    x <- as.numeric(gsub(pattern = ',', replacement = '', x = x))
+    return(x)
+}
+
+# ~~~~~ LOAD REPORT DATA ~~~~~ #
+html_file <- normalizePath("Demultiplex_Stats.htm")
+result <- readHTMLTable(doc = html_file , trim = TRUE) 
+top_unknown_barcodes_df <- result[[4]]
+lane_summary_df <- result[[3]]
+save.image(file="load_report_data.Rdata",compress = TRUE)
+```
+
+```{r lane_summary}
+# 2
+flowcell_summary_colnames <- c("Clusters (Raw)", "Clusters(PF)", "Yield (MBases)")
+# 3
+lane_summary_colnames <- c("Lane", "Project", "Sample", "Barcode sequence", "PF Clusters", 
+                           "% of thelane", "% Perfectbarcode", "% One mismatchbarcode", 
+                           "Yield (Mbases)", "% PFClusters", "% >= Q30bases", "Mean QualityScore")
+
+lane_summary_numeric_cols <- c("PF Clusters", 
+                               "% of thelane", "% Perfectbarcode", "% One mismatchbarcode", 
+                               "Yield (Mbases)", "% PFClusters", "% >= Q30bases", "Mean QualityScore")
+
+# convert the values to numeric data
+lane_summary_df <- cbind(lane_summary_df[, ! colnames(lane_summary_df) %in% lane_summary_numeric_cols], 
+      apply(X = lane_summary_df[,lane_summary_numeric_cols], 
+            MARGIN = 2, 
+            FUN = make_numeric))
+
+# fix colnames
+colnames(lane_summary_df) <- gsub(pattern = ' ', replacement = '_', x = colnames(lane_summary_df))
+colnames(lane_summary_df) <- gsub(pattern = '%', replacement = 'pcnt', x = colnames(lane_summary_df))
+colnames(lane_summary_df) <- gsub(pattern = '>=', replacement = 'greaterthan_equal', x = colnames(lane_summary_df))
+colnames(lane_summary_df) <- gsub(pattern = '(', replacement = '_', x = colnames(lane_summary_df), fixed = TRUE)
+colnames(lane_summary_df) <- gsub(pattern = ')', replacement = '', x = colnames(lane_summary_df), fixed = TRUE)
+
+# get totals
+read_sum_df <- aggregate(  PF_Clusters  ~ Sample , data = lane_summary_df, FUN = sum)
+undetermined_summary <- lane_summary_df[lane_summary_df[["Sample"]] == "Undetermined", ]
+lane_sample_summary <- lane_summary_df[lane_summary_df[["Sample"]] != "Undetermined", ]
+
+# plot
+lane_reads_plot <- ggplot(lane_summary_df, aes(x = Sample, y = PF_Clusters/1000000)) +   geom_bar(aes(fill = Lane), position = "dodge", stat="identity") + ylab("Millions of Reads") + xlab("Sample") + ggtitle("Barcode Matched Read Count per Sample per Lane") + coord_flip()
+
+sample_reads_plot <- ggplot(read_sum_df, aes(x = Sample, y = PF_Clusters/1000000)) +   geom_bar(position = "dodge", stat="identity") + ylab("Millions of Reads") + xlab("Sample") + ggtitle("Total Barcode Matched Read Count per Sample") + coord_flip()
+
+pcnt_undetermined_plot <- ggplot(undetermined_summary, aes(x = Lane, y = pcnt_of_thelane)) + geom_bar(position = "dodge", stat="identity") + ggtitle("Percent Undetermined Reads per Lane") + ylab("Percent of Lane") + xlab("Lane")  + scale_y_continuous(limits = c(0, 100), breaks = seq(0, 100, 10)) # + ylim(0, 100)
+
+pcnt_sample_plot <- ggplot(lane_sample_summary, aes(x = Sample, y = pcnt_of_thelane)) + geom_bar(aes(fill = Lane), position = "dodge", stat="identity") + ggtitle("Percent Sample Reads per Lane") + ylab("Percent of Lane") + xlab("Lane")  + coord_flip() # + scale_y_continuous(limits = c(0, 100), breaks = seq(0, 100, 10)) # + ylim(0, 100)
+
+lane_quality_score_plot <- ggplot(lane_summary_df, aes(x = Sample, y = Mean_QualityScore)) +   geom_bar(aes(fill = Lane), position = "dodge", stat="identity") + ylab("Mean Quality Score") + xlab("Sample") + ggtitle("Mean Quality Score per Sample per Lane") + coord_flip()
+
+pcnt_perfect_barcode_plot <- ggplot(lane_sample_summary, aes(x = Sample, y = pcnt_Perfectbarcode)) +   geom_bar(aes(fill = Lane), position = "dodge", stat="identity") + ylab("Percent Perfect Barcode") + xlab("Sample") + ggtitle("Percent of Reads with Perfect Barcodes per Sample per Lane") + coord_flip()
+```
+
+```{r unknown_barcodes}
+# from the HTML; this does not get imported correctly, so do not use it right now
+# 4
+# top_unknown_barcodes_colnames <- c("Lane", "Count", "Sequence", "Lane", "Count", "Sequence", "Lane", 
+# "Count", "Sequence", "Lane", "Count", "Sequence")
+# clean up colnames
+# colnames(top_unknown_barcodes_df) <-gsub(pattern = "\\s", replacement = "", x = colnames(top_unknown_barcodes_df))
+# unknown_barcodes_numeric_cols <- c()
+# top_unknown_barcodes_df
+```
+
+```{r top_barcodes}
+# dir with demultiplexing output
+demult_dir <- "Unaligned" # 170602_NB501073_0012_AHCKYCBGX2/Data/Intensities/BaseCalls/Unaligned
+stats_dir <- file.path(demult_dir, "Stats")
+demult_files <- dir(stats_dir, full.names = TRUE, pattern = "DemuxSummary") # Stats/DemuxSummaryF1L1.txt, etc
+
+top_unknown_barcodes_df <- data.frame()
+for(demult_file in demult_files){
+    # get the lane number from the file name
+    lane_number <- gsub(pattern = '^.*L([[:digit:]]).txt', replacement = '\\1', x = basename(demult_file))
+    
+    # system grep search pattern
+    pattern <- "### Columns: Index_Sequence Hit_Count"
+    read_command <- sprintf("grep -A 10 '%s' %s", pattern, demult_file)
+    
+    # import the stats
+    df <- read.delim(pipe(read_command), header = TRUE, sep = '\t') 
+    
+    # clean up
+    df[["Barcode"]] <- rownames(df)
+    df[["Lane"]] <- lane_number
+    
+    rownames(df) <- seq(1:nrow(df))
+    colnames(df) <- c("Count", "Barcode", "Lane")
+    
+    df <- df[c("Lane", "Barcode", "Count")]
+    
+    # aggregate
+    if(ncol(top_unknown_barcodes_df) < 1){
+        top_unknown_barcodes_df <- df
+    } else {
+        top_unknown_barcodes_df <- cbind(top_unknown_barcodes_df, df)
+    }
+}
+
+```
+
+```{r sample_table}
+run_project <- unique(as.character(lane_sample_summary[["Project"]]))
+# run_summary_table <- lane_sample_summary[c("Lane", "Project", "Sample", "Barcode_sequence")]
+
+summary_cols <- c("Lane", "Project", "Sample", "Barcode_sequence")
+
+run_lanes <- unique(as.character(lane_sample_summary[["Lane"]]))
+
+run_summary <- list()
+
+for(lane in run_lanes){
+    lane_df <- lane_sample_summary[ which(as.character(lane_sample_summary[["Lane"]]) == lane), summary_cols]
+    run_summary[[lane]] <- lane_df
+}
+
+print_lane_df <- function(df, name){
+    mycat(sprintf('### Lane %s \n\n', name))
+    print(kable(df, row.names = FALSE))
+}
+
+```
+
+```{r avg_undetermined_rating}
+avg_undetermined <- mean(undetermined_summary[["pcnt_of_thelane"]])
+print_undetermined_rating <- function(avg_undetermined){
+    determined_reads <- 100 - avg_undetermined
+    if(determined_reads > 90){
+        print_big_color_boxed_text(message = "Undetermined Reads Score: A", border_color = "blue", text_color = "blue")
+    } else if (determined_reads > 80){
+        print_big_color_boxed_text(message = "Undetermined Reads Score: B", border_color = "green", text_color = "green")
+    } else if (determined_reads > 70) {
+        print_big_color_boxed_text(message = "Undetermined Reads Score: C", border_color = "yellow", text_color = "yellow")
+    } else if (determined_reads > 60) {
+        print_big_color_boxed_text(message = "Undetermined Reads Score: D", border_color = "red", text_color = "red")
+    } else {
+        print_big_color_boxed_text(message = "Undetermined Reads Score: F", border_color = "maroon", text_color = "maroon")
+    }
+    
+}
+
+print_big_color_boxed_text <- function(message, border_color, text_color){
+    mycat(sprintf('<p style="border:3px; border-style:solid; border-color:%s; padding: 1em;"><span style="color:%s"><big><big><big>%s</big></big></big></span></p>', border_color, text_color, message))
+}
+
+```
+
+# Summary
+
+
+Project:
+
+```{r}
+mycat(run_project)
+```
+
+Demultiplexing output location: 
+
+```{r}
+mycat(normalizePath('Unaligned'))
+```
+
+## Samples {.tabset .tabset-pills}
+
+```{r, results='asis'}
+for(i in seq_along(names(run_summary))){
+    name <- names(run_summary)[i]
+    df <- run_summary[i]
+    print_lane_df(df = df, name = name)
+}
+# datatable(lane_sample_summary[, summary_cols]) # keeps leaving a weird warning message in the document, hold off on this until later
+```
+
+# Lane Metrics
+
+## Undetermined Reads
+
+```{r, results='asis'}
+print_undetermined_rating(avg_undetermined = avg_undetermined)
+```
+
+```{r}
+print(pcnt_undetermined_plot)
+```
+
+## Read Qualities
+
+```{r, fig.height=12, fig.width=8}
+print(lane_reads_plot)
+print(pcnt_sample_plot)
+print(lane_quality_score_plot)
+print(pcnt_perfect_barcode_plot)
+```
+
+# Sample Metrics
+
+```{r}
+print(sample_reads_plot)
+```
+
+# Top Unknown Barcodes
+
+```{r, results='asis'}
+kable(top_unknown_barcodes_df)
+```
+
+# System Information 
+
+```{r}
+# {.tabset .tabset-pills}
+
+## Hide
+
+## Show
+# system info
+mycat(sprintf("System:\n%s\n%s", system("hostname", intern = TRUE), system("uname -srv", intern = TRUE)))
+mycat(sprintf("System user:\n%s", system("whoami", intern = TRUE)))
+# dir
+mycat(sprintf("System location:\n%s", system('pwd',intern=T)))
+
+# repo info
+mycat(sprintf("Git Remote:\n%s\n", system('git remote -v',intern=T)))
+mycat(sprintf("Git branch and commit\n%s", system('printf "%s: %s" "$(git rev-parse --abbrev-ref HEAD)" "$(git rev-parse HEAD)"',intern=T)))
+
+# date time
+mycat(sprintf("Time and Date of report creation:\n%s", system("date", intern = TRUE)))
+
+# R system info, packages, etc
+sessionInfo()
+
+# save current session
+save.image(file="final_report_data.Rdata",compress = TRUE)
+```
