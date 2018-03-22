@@ -26,8 +26,26 @@ log.info "* Samplesheet:     ${params.samplesheet}"
 
 
 Channel.fromPath( params.samplesheet ).set { samplesheet_input }
-Channel.fromPath( params.run_dir ).set { run_dir }
+Channel.fromPath( params.run_dir ).into { run_dir; run_dir2 }
 Channel.fromPath( params.report_template_dir ).set { report_template_dir }
+
+process validate_RunParamsXML {
+    tag { "${run_dir}" }
+    executor "local"
+    publishDir "${params.output_dir}/", mode: 'copy', overwrite: true
+
+    input:
+    file(run_dir) from run_dir2
+
+    output:
+    file("RunParameters.xml") into run_params_xml
+
+    script:
+    """
+    cp ${run_dir}/RunParameters.xml .
+    """
+
+}
 
 process copy_samplesheet {
     tag { "${samplesheet}" }
@@ -180,6 +198,23 @@ process demultiplexing_report {
     """
 }
 
+process convert_run_params{
+    tag { "${run_params_xml_file}" }
+    publishDir "${params.output_dir}/", mode: 'copy', overwrite: true
+    executor "local"
+
+    input:
+    file(run_params_xml_file) from run_params_xml
+
+    output:
+    file("RunParameters.tsv") into run_params_tsv
+
+    script:
+    """
+    RunParametersXML2tsv.py
+    """
+}
+
 // ~~~~~~~~~~~~~~~ PIPELINE COMPLETION EVENTS ~~~~~~~~~~~~~~~~~~~ //
 workflow.onComplete {
     def status = "NA"
@@ -225,6 +260,7 @@ workflow.onComplete {
             attach samplesheet_copy2.mix(demultiplex_stats_html)
                                     .mix(demultiplexing_report_html)
                                     // .mix(multiqc_report_html)
+                                    .mix(run_params_tsv)
                                     .toList().getVal()
             subject "[${params.workflow_label}] ${status}: ${params.project}"
             body
