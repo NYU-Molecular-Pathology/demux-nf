@@ -3,3 +3,4 @@ nextflow
 .nextflow/
 work/
 *.html
+nextseq-report/demultiplexing_report_files/
