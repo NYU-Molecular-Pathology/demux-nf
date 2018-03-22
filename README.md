@@ -27,7 +27,7 @@ make run-NGS580 PROJECT=<project ID>
 make run-NGS580 PROJECT=180213_NB501073_0034_AHWJLLAFXX
 ```
 
-    - with extra parameters:
+with extra parameters:
 
 ```
 make run-NGS580 PROJECT=180213_NB501073_0034_AHWJLLAFXX EP="--samplesheet /ifs/data/molecpathlab/quicksilver/180213_NB501073_0034_AHWJLLAFXX/Data/Intensities/BaseCalls/og.SampleSheet.csv -resume"
