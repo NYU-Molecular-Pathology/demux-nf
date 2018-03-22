@@ -21,7 +21,7 @@ log.info "* Samplesheet:     ${params.samplesheet}"
 // - fastqc
 // - multiqc
 // - custom report
-// - add to run index db
+// - add to run index db TODO: this!
 // - email output
 
 
