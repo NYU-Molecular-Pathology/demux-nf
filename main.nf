@@ -150,9 +150,6 @@ process fastqc {
 //     """
 // }
 
-// email_files = Channel.create()
-// email_files.mix(demultiplex_stats_html).subscribe { println "[email_files] ${it}" }
-
 process demultiplexing_report {
     tag { "${template_dir}" }
     executor "local"
