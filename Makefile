@@ -1,5 +1,6 @@
 SHELL:=/bin/bash
 PROJECT:=none
+SEQDIR:=/ifs/data/molecpathlab/quicksilver
 EP:=
 
 none:
@@ -11,6 +12,19 @@ none:
 
 install: ./nextflow
 
+# set up a new sequencing directory with a copy of this repo for demultiplexing
+deploy:
+	[ -z "$(PROJECT)" ] && printf "invalid PROJECT specified: $(PROJECT)\n" && exit 1 || :
+	[ ! -d "$(SEQDIR)/$(PROJECT)" ] && printf "invalid PROJECT specified: $(PROJECT)\n" && exit 1 || :
+	[ ! -d "$(SEQDIR)/$(PROJECT)/Data/Intensities/BaseCalls" ] && printf "Basecalls directory does not exist for run: $(SEQDIR)/$(PROJECT)\n" && exit 1 || :
+	basecalls_dir="$(SEQDIR)/$(PROJECT)/Data/Intensities/BaseCalls" && \
+	echo "Setting up for demultiplexing in directory: $${basecalls_dir}" && \
+	repo_dir="$${PWD}" && \
+	cd "$${basecalls_dir}" && \
+	git clone $${repo_dir} && \
+	run_cmd="make run-NGS580 PROJECT=$(PROJECT)" && \
+	output_dir="$${basecalls_dir}/$$(basename $${repo_dir})" && \
+	printf "please run the following command to start demultiplexing:\n\n%s\n%s\n" "cd $${output_dir}" "$${run_cmd}" 
 
 
 # ~~~~~ RUN PIPELINE ~~~~~ #
