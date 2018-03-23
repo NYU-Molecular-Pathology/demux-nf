@@ -21,7 +21,7 @@ deploy:
 	echo "Setting up for demultiplexing in directory: $${basecalls_dir}" && \
 	repo_dir="$${PWD}" && \
 	cd "$${basecalls_dir}" && \
-	git clone $${repo_dir} && \
+	git clone --recursive $${repo_dir} && \
 	run_cmd="make run-NGS580 PROJECT=$(PROJECT)" && \
 	output_dir="$${basecalls_dir}/$$(basename $${repo_dir})" && \
 	printf "please run the following command to start demultiplexing:\n\n%s\n%s\n" "cd $${output_dir}" "$${run_cmd}" 
