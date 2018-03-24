@@ -1,9 +1,10 @@
-params.workflow_label = "Demultiplexing"
 // params.project = "180131_NB501073_0032_AHT5F3BGX3"
 // params.sequencer_dir = "/ifs/data/molecpathlab/quicksilver"
 params.run_dir = "${params.sequencer_dir}/${params.project}"
 params.basecalls_dir = "${params.run_dir}/Data/Intensities/BaseCalls"
-params.output_dir = "${params.basecalls_dir}/Demultiplexing"
+// params.output_dir = "${params.basecalls_dir}/Demultiplexing"
+params.output_dir = "${params.production_dir}/${params.project}/Demultiplexing"
+
 params.samplesheet = "/ifs/data/molecpathlab/quicksilver/to_be_demultiplexed/NGS580/${params.project}-SampleSheet.csv"
 params.report_template_dir = "nextseq-report"
 

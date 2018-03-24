@@ -1,6 +1,7 @@
 SHELL:=/bin/bash
 PROJECT:=none
 SEQDIR:=/ifs/data/molecpathlab/quicksilver
+PRODDIR:=/ifs/data/molecpathlab/production
 EP:=
 
 none:
@@ -17,13 +18,16 @@ deploy:
 	[ -z "$(PROJECT)" ] && printf "invalid PROJECT specified: $(PROJECT)\n" && exit 1 || :
 	[ ! -d "$(SEQDIR)/$(PROJECT)" ] && printf "invalid PROJECT specified: $(PROJECT)\n" && exit 1 || :
 	[ ! -d "$(SEQDIR)/$(PROJECT)/Data/Intensities/BaseCalls" ] && printf "Basecalls directory does not exist for run: $(SEQDIR)/$(PROJECT)\n" && exit 1 || :
+	project_dir="$(SEQDIR)/$(PROJECT)" && \
 	basecalls_dir="$(SEQDIR)/$(PROJECT)/Data/Intensities/BaseCalls" && \
-	echo "Setting up for demultiplexing in directory: $${basecalls_dir}" && \
+	production_dir="$(PRODDIR)/$(PROJECT)" && \
 	repo_dir="$${PWD}" && \
-	cd "$${basecalls_dir}" && \
+	output_dir="$${production_dir}/$$(basename $${repo_dir})" && \
+	mkdir "$${production_dir}" && \
+	echo "Setting up for demultiplexing of $${project_dir} in output directory: $${output_dir}" && \
+	cd "$${production_dir}" && \
 	git clone --recursive $${repo_dir} && \
 	run_cmd="make run-NGS580 PROJECT=$(PROJECT)" && \
-	output_dir="$${basecalls_dir}/$$(basename $${repo_dir})" && \
 	printf "please run the following command to start demultiplexing:\n\n%s\n%s\n" "cd $${output_dir}" "$${run_cmd}" 
 
 
