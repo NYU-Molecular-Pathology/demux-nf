@@ -1,8 +1,8 @@
 // params.project = "180131_NB501073_0032_AHT5F3BGX3"
 // params.sequencer_dir = "/ifs/data/molecpathlab/quicksilver"
+// params.output_dir = "${params.basecalls_dir}/Demultiplexing"
 params.run_dir = "${params.sequencer_dir}/${params.project}"
 params.basecalls_dir = "${params.run_dir}/Data/Intensities/BaseCalls"
-// params.output_dir = "${params.basecalls_dir}/Demultiplexing"
 params.output_dir = "${params.production_dir}/${params.project}/Demultiplexing"
 
 params.samplesheet = "/ifs/data/molecpathlab/quicksilver/to_be_demultiplexed/NGS580/${params.project}-SampleSheet.csv"
@@ -217,19 +217,15 @@ process convert_run_params{
 // email_attachments.subscribe{println "${it}"}
 
 
-samplesheet_copy2.concat(demultiplex_stats_html, demultiplexing_report_html, run_params_tsv)
-                    .map{ item ->
-                        return "${item}"
-                    }
-                    .collectFile(name: 'email_attachments.txt', storeDir: ".", newLine: true)
+// samplesheet_copy2.concat(demultiplex_stats_html, demultiplexing_report_html, run_params_tsv)
+//                     .map{ item ->
+//                         return "${item}"
+//                     }
+//                     .collectFile(name: 'email_attachments.txt', storeDir: ".", newLine: true)
 
-
+def attachments =  samplesheet_copy2.concat(demultiplex_stats_html, demultiplexing_report_html, run_params_tsv).toList().getVal()
 // ~~~~~~~~~~~~~~~ PIPELINE COMPLETION EVENTS ~~~~~~~~~~~~~~~~~~~ //
-
-
 workflow.onComplete {
-    // def attachments =  email_attachments.toList().getVal()
-    // println "[attachments]: ${attachments}"
     def status = "NA"
     if(workflow.success) {
         status = "SUCCESS"
@@ -266,14 +262,10 @@ workflow.onComplete {
         .stripIndent()
         // Total CPU-Hours   : ${workflow.stats.getComputeTimeString() ?: '-'}
     if(params.pipeline_email) {
-        //
         sendMail {
             to "${params.email_to}"
             from "${params.email_from}"
-            // files from process channels
-            // attach samplesheet_copy2.concat(demultiplex_stats_html, demultiplexing_report_html, run_params_tsv).toList().getVal()
-            // attach email_attachments.toList().getVal()
-            // attach attachments
+            attach attachments
             subject "[${params.workflow_label}] ${status}: ${params.project}"
             body
             """
