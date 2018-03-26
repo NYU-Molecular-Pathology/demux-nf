@@ -2,6 +2,7 @@ SHELL:=/bin/bash
 PROJECT:=none
 SEQDIR:=/ifs/data/molecpathlab/quicksilver
 PRODDIR:=/ifs/data/molecpathlab/production
+NXF_VER:=0.28.0
 EP:=
 
 none:
@@ -9,6 +10,7 @@ none:
 # ~~~~~ SETUP PIPELINE ~~~~~ #
 ./nextflow:
 	module unload java && module load java/1.8 && \
+	export NXF_VER="$(NXF_VER)" && \
 	curl -fsSL get.nextflow.io | bash
 
 install: ./nextflow
