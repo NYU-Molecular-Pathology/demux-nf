@@ -13,7 +13,7 @@ cd demux-nf
 
 The easiest way to run the pipeline is by using the included `Makefile`, which has shortcuts to preset execution configurations, with the sequencer output directory name provided as an argument to `PROJECT`. Extra parameters for Nextflow can be provided with `EP`.
 
-By default, the pipeline will run in the _current session_ in your terminal. To run the pipeline in the background, it is recommended to either run it in `screen` or use the included cluster submission script.
+_NOTE:_ By default, the pipeline will run in the _current session_ in your terminal. To run the pipeline in the background, it is recommended to either run it in `screen` or use the included cluster submission script (`submit.sh`).
 
 ## NGS580 Demultiplexing on NYU phoenix
 
@@ -47,6 +47,13 @@ _NOTE:_ This only runs the parent Nextflow process as a cluster job; Nextflow al
 
 - Java 8 (Nextflow)
 
+- `bcl2fastq` version 2.17.1
+
+- FastQC version 0.11.7
+
+- R (3.3.0+ recommended, with `knitr`)
+
+- Pandoc 1.13.1+
+
 - GraphViz Dot (to compile flowchart)
 
-- any other requirements needed by your pipeline tasks
