@@ -5,7 +5,6 @@ params.run_dir = "${params.sequencer_dir}/${params.project}"
 params.basecalls_dir = "${params.run_dir}/Data/Intensities/BaseCalls"
 params.output_dir = "${params.production_dir}/${params.project}/Demultiplexing"
 
-params.samplesheet = "/ifs/data/molecpathlab/quicksilver/to_be_demultiplexed/NGS580/${params.project}-SampleSheet.csv"
 params.report_template_dir = "nextseq-report"
 
 log.info "~~~~~~~ Demultiplexing Pipeline ~~~~~~~"
