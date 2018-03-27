@@ -3,7 +3,7 @@
 // params.output_dir = "${params.basecalls_dir}/Demultiplexing"
 params.run_dir = "${params.sequencer_dir}/${params.project}"
 params.basecalls_dir = "${params.run_dir}/Data/Intensities/BaseCalls"
-params.output_dir = "${params.production_dir}/${params.project}/Demultiplexing"
+params.output_dir = "${params.production_dir}/${params.project}"
 
 params.report_template_dir = "nextseq-report"
 

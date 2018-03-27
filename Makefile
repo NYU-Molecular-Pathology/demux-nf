@@ -1,7 +1,7 @@
 SHELL:=/bin/bash
-PROJECT:=none
+PROJECT:=
 SEQDIR:=/ifs/data/molecpathlab/quicksilver
-PRODDIR:=/ifs/data/molecpathlab/production
+PRODDIR:=/ifs/data/molecpathlab/production/Demultiplexing
 NXF_VER:=0.28.0
 EP:=
 
