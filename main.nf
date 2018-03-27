@@ -198,7 +198,8 @@ process convert_run_params{
     RunParametersXML2tsv.py
     """
 }
-//
+
+// // experimental email attachment collection method
 // process collect_email_attachments {
 //     tag { "${attachments}" }
 //     executor "local"
@@ -216,12 +217,6 @@ process convert_run_params{
 // email_attachments.collectFile(name: 'email_attachments.txt', storeDir: ".", newLine: true)
 // email_attachments.subscribe{println "${it}"}
 
-
-// samplesheet_copy2.concat(demultiplex_stats_html, demultiplexing_report_html, run_params_tsv)
-//                     .map{ item ->
-//                         return "${item}"
-//                     }
-//                     .collectFile(name: 'email_attachments.txt', storeDir: ".", newLine: true)
 
 def attachments =  samplesheet_copy2.concat(demultiplex_stats_html, demultiplexing_report_html, run_params_tsv).toList().getVal()
 // ~~~~~~~~~~~~~~~ PIPELINE COMPLETION EVENTS ~~~~~~~~~~~~~~~~~~~ //
