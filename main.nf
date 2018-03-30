@@ -17,7 +17,7 @@ log.info "* Samplesheet:     ${params.samplesheet}"
 
 
 Channel.fromPath( params.samplesheet ).set { samplesheet_input }
-Channel.from( "${params.run_dir}" ).into { run_dir; run_dir2 } // dont stage run dir for safety reasons
+Channel.from( "${params.run_dir}" ).into { run_dir; run_dir2; run_dir3; run_dir4 } // dont stage run dir for safety reasons
 Channel.fromPath( params.report_template_dir ).set { report_template_dir }
 
 process validate_RunParamsXML {
@@ -38,6 +38,26 @@ process validate_RunParamsXML {
 
 }
 
+process validate_run_completion {
+    tag { "${run_dir}" }
+    executor "local"
+    publishDir "${params.output_dir}/", mode: 'copy', overwrite: true
+
+    input:
+    val(run_dir) from run_dir3
+
+    output:
+    file("RTAComplete.txt") into run_RTAComplete_txt
+    file("RunCompletionStatus.xml") into run_CompletionStatus_xml
+
+    script:
+    """
+    cp ${run_dir}/RTAComplete.txt .
+    cp ${run_dir}/RunCompletionStatus.xml .
+    """
+
+}
+
 process copy_samplesheet {
     tag { "${samplesheet}" }
     executor "local"
@@ -48,8 +68,7 @@ process copy_samplesheet {
 
     output:
     file("${samplesheet}")
-    file("SampleSheet.csv") into samplesheet_copy
-    file("SampleSheet.csv") into samplesheet_copy2
+    file("SampleSheet.csv") into samplesheet_copy, samplesheet_copy2
 
     script:
     """
@@ -217,7 +236,7 @@ process convert_run_params{
 // email_attachments.subscribe{println "${it}"}
 
 
-def attachments =  samplesheet_copy2.concat(demultiplex_stats_html, demultiplexing_report_html, run_params_tsv).toList().getVal()
+def attachments =  samplesheet_copy2.concat(demultiplex_stats_html, demultiplexing_report_html, run_params_tsv run_RTAComplete_txt, run_RTAComplete_txt).toList().getVal()
 // ~~~~~~~~~~~~~~~ PIPELINE COMPLETION EVENTS ~~~~~~~~~~~~~~~~~~~ //
 workflow.onComplete {
     def status = "NA"
