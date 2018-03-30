@@ -236,7 +236,7 @@ process convert_run_params{
 // email_attachments.subscribe{println "${it}"}
 
 
-def attachments =  samplesheet_copy2.concat(demultiplex_stats_html, demultiplexing_report_html, run_params_tsv run_RTAComplete_txt, run_RTAComplete_txt).toList().getVal()
+def attachments =  samplesheet_copy2.concat(demultiplex_stats_html, demultiplexing_report_html, run_params_tsv, run_RTAComplete_txt, run_RTAComplete_txt).toList().getVal()
 // ~~~~~~~~~~~~~~~ PIPELINE COMPLETION EVENTS ~~~~~~~~~~~~~~~~~~~ //
 workflow.onComplete {
     def status = "NA"
