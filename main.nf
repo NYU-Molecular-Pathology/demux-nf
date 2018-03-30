@@ -20,24 +20,6 @@ Channel.fromPath( params.samplesheet ).set { samplesheet_input }
 Channel.from( "${params.run_dir}" ).into { run_dir; run_dir2; run_dir3; run_dir4 } // dont stage run dir for safety reasons
 Channel.fromPath( params.report_template_dir ).set { report_template_dir }
 
-// process validate_RunParamsXML {
-//     tag { "${run_dir}" }
-//     executor "local"
-//     publishDir "${params.output_dir}/", mode: 'copy', overwrite: true
-//
-//     input:
-//     val(run_dir) from run_dir2
-//
-//     output:
-//     file("RunParameters.xml") into run_params_xml
-//
-//     script:
-//     """
-//     cp ${run_dir}/RunParameters.xml .
-//     """
-//
-// }
-
 process validate_run_completion {
     tag { "${run_dir}" }
     executor "local"
