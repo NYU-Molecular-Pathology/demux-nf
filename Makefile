@@ -26,11 +26,11 @@ deploy:
 	repo_dir="$${PWD}" && \
 	output_dir="$${production_dir}/$$(basename $${repo_dir})" && \
 	mkdir "$${production_dir}" && \
-	echo "Setting up for demultiplexing of $${project_dir} in output directory: $${output_dir}" && \
+	echo "> Setting up for demultiplexing of $${project_dir} in output directory: $${output_dir}" && \
 	cd "$${production_dir}" && \
 	git clone --recursive $${repo_dir} && \
 	run_cmd="make run-NGS580 PROJECT=$(PROJECT)" && \
-	printf "please run the following command to start demultiplexing:\n\n%s\n%s\n" "cd $${output_dir}" "$${run_cmd}" 
+	printf "> please run the following command to start demultiplexing:\n\n%s\n%s\n" "cd $${output_dir}" "$${run_cmd}" 
 
 
 # ~~~~~ RUN PIPELINE ~~~~~ #
