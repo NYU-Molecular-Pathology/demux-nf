@@ -6,7 +6,7 @@ Nextflow pipeline for demultiplexing
 Clone this repository
 
 ```
-git clone https://github.com/NYU-Molecular-Pathology/demux-nf.git
+git clone --recursive https://github.com/NYU-Molecular-Pathology/demux-nf.git
 cd demux-nf
 ```
 # Usage
