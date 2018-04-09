@@ -3,7 +3,7 @@
 // params.output_dir = "${params.basecalls_dir}/Demultiplexing"
 params.run_dir = "${params.sequencer_dir}/${params.project}"
 params.basecalls_dir = "${params.run_dir}/Data/Intensities/BaseCalls"
-params.output_dir = "${params.production_dir}/${params.project}"
+params.output_dir = "${params.production_dir}/${params.project}/output"
 
 params.report_template_dir = "nextseq-report"
 
@@ -135,35 +135,38 @@ process fastqc {
 
 
 // currently broken on phoenix ??
-// process multiqc {
-//     tag { "${output_dir}" }
-//     publishDir "${params.output_dir}/multiqc", mode: 'copy', overwrite: true
-//     executor "local"
-//
-//     input:
-//     val(items) from bcl2fastq_output.mix(fastqc_fastqs)
-//                                             .collect() // force it to wait for all steps to finish
-//     file(output_dir) from Channel.fromPath("${params.output_dir}")
-//
-//     output:
-//     file "multiqc_report.html" into multiqc_report_html
-//     file "multiqc_data"
-//
-//     script:
-//     """
-//     echo \$PATH
-//     echo \${PYTHONPATH:-"not set"}
-//     echo \${PYTHONHOME:-"not set"}
-//     module list
-//
-//     python --version
-//     which python
-//
-//     which multiqc
-//     multiqc --version
-//     multiqc "${output_dir}"
-//     """
-// }
+process multiqc {
+    tag { "${output_dir}" }
+    publishDir "${params.output_dir}/multiqc", mode: 'copy', overwrite: true
+    executor "local"
+
+    input:
+    val(items) from bcl2fastq_output.mix(fastqc_fastqs)
+                                            .collect() // force it to wait for all steps to finish
+    file(output_dir) from Channel.fromPath("${params.output_dir}")
+
+    output:
+    file "multiqc_report.html" into multiqc_report_html
+    file "multiqc_data"
+
+    when:
+    params.multiqc_disable == false
+
+    script:
+    """
+    echo \$PATH
+    echo \${PYTHONPATH:-"not set"}
+    echo \${PYTHONHOME:-"not set"}
+    module list
+
+    python --version
+    which python
+
+    which multiqc
+    multiqc --version
+    multiqc "${output_dir}"
+    """
+}
 
 process demultiplexing_report {
     tag { "${template_dir}" }
@@ -202,27 +205,30 @@ process convert_run_params{
     """
 }
 
-// // experimental email attachment collection method
-// process collect_email_attachments {
-//     tag { "${attachments}" }
-//     executor "local"
-//
-//     input:
-//     file(attachments: "*") from samplesheet_copy2.concat(demultiplex_stats_html, demultiplexing_report_html, run_params_tsv)
-//
-//     output:
-//     val(attachments) into email_attachments
-//
-//     script:
-//     """
-//     """
-// }
+process collect_email_attachments {
+    tag { "${attachments}" }
+    publishDir "${params.output_dir}/email_attachments", mode: 'copy', overwrite: true
+    stageInMode "copy"
+    executor "local"
+    echo true
+
+    input:
+    file(attachments: "*") from samplesheet_copy2.concat(demultiplex_stats_html, demultiplexing_report_html, run_params_tsv, run_RTAComplete_txt ).collect()
+
+    output:
+    file(attachments) into email_attachments
+
+    script:
+    """
+    echo "[collect_email_attachments] files to be attached: ${attachments}"
+    """
+}
 // email_attachments.collectFile(name: 'email_attachments.txt', storeDir: ".", newLine: true)
 // email_attachments.subscribe{println "${it}"}
+// def attachments =  samplesheet_copy2.concat(demultiplex_stats_html, demultiplexing_report_html, run_params_tsv, run_RTAComplete_txt ).toList().getVal()
 
-
-def attachments =  samplesheet_copy2.concat(demultiplex_stats_html, demultiplexing_report_html, run_params_tsv, run_RTAComplete_txt ).toList().getVal()
 // ~~~~~~~~~~~~~~~ PIPELINE COMPLETION EVENTS ~~~~~~~~~~~~~~~~~~~ //
+def attachments =  email_attachments.toList().getVal()
 workflow.onComplete {
     def status = "NA"
     if(workflow.success) {

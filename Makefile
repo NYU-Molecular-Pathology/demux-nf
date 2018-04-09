@@ -63,10 +63,14 @@ clean-work:
 # deletes files from previous runs of the pipeline, keeps current results
 clean: clean-logs clean-traces clean-reports clean-flowcharts
 
-# deletes all pipeline output
+# deletes all pipeline output in current directory
 clean-all: clean clean-output clean-work 
 	[ -d .nextflow ] && mv .nextflow .nextflowold && rm -rf .nextflowold &
 	rm -f .nextflow.log
 	rm -f *.png
 	rm -f trace*.txt*
 	rm -f *.html*
+
+# deletes all pipeline output along with 'output' directory one level up
+clean-results: clean-all
+	[ -d ../output ] && mv ../output ../output_old && rm -rf ../output_old &
