@@ -209,6 +209,7 @@ process collect_email_attachments {
     tag { "${attachments}" }
     publishDir "${params.output_dir}/email_attachments", mode: 'copy', overwrite: true
     stageInMode "copy"
+    stageOutMode "copy"
     executor "local"
     echo true
 
@@ -267,6 +268,9 @@ workflow.onComplete {
         .stripIndent()
         // Total CPU-Hours   : ${workflow.stats.getComputeTimeString() ?: '-'}
     if(params.pipeline_email) {
+        // 30s pause to allow time for NFS storage to sync
+        println ">>> Sleeping for 30s before sending mail output..."
+        sleep(30000)
         sendMail {
             to "${params.email_to}"
             from "${params.email_from}"
