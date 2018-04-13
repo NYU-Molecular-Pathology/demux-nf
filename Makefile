@@ -32,6 +32,13 @@ deploy:
 	run_cmd="make run-NGS580 PROJECT=$(PROJECT)" && \
 	printf "> please run the following command to start demultiplexing:\n\n%s\n%s\n" "cd $${output_dir}" "$${run_cmd}" 
 
+# update the repo remote for ssh
+remote:
+	git remote set-url origin git@github.com:NYU-Molecular-Pathology/demux-nf.git
+
+# pull the latest version of all submodules
+update-submodules:
+	git submodule update --recursive --remote
 
 # ~~~~~ RUN PIPELINE ~~~~~ #
 run-NGS580: install

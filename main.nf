@@ -42,13 +42,29 @@ process validate_run_completion {
 
 }
 
+process validate_samplesheet {
+    tag { "${samplesheet}" }
+    executor "local"
+
+    input:
+    file(samplesheet) from samplesheet_input
+
+    output:
+    file("${samplesheet}") into validated_samplesheet
+
+    script:
+    """
+    validate-samplesheet.py "${samplesheet}"
+    """
+}
+
 process copy_samplesheet {
     tag { "${samplesheet}" }
     executor "local"
     publishDir "${params.output_dir}/", mode: 'copy', overwrite: true
 
     input:
-    file(samplesheet) from samplesheet_input
+    file(samplesheet) from validated_samplesheet
 
     output:
     file("${samplesheet}")
