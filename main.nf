@@ -229,7 +229,7 @@ process collect_email_attachments {
     echo true
 
     input:
-    file(attachments: "*") from samplesheet_copy2.concat(demultiplex_stats_html, demultiplexing_report_html, run_params_tsv, run_RTAComplete_txt ).collect()
+    file(attachments: "*") from samplesheet_copy2.concat(demultiplex_stats_html, demultiplexing_report_html, run_params_tsv, run_RTAComplete_txt, multiqc_report_html ).collect()
 
     output:
     file(attachments) into email_attachments
