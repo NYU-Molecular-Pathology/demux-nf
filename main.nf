@@ -68,8 +68,7 @@ process copy_samplesheet {
 
     output:
     file("${samplesheet}")
-    file("SampleSheet.csv") into samplesheet_copy
-    file("SampleSheet.csv") into samplesheet_copy2
+    file("SampleSheet.csv") into (samplesheet_copy, samplesheet_copy2)
 
     script:
     """
@@ -87,9 +86,9 @@ process bcl2fastq {
 
     output:
     file("Unaligned") into bcl2fastq_output
-    file("Unaligned/Demultiplex_Stats.htm") into demultiplex_stats_html
-    file("Unaligned/Demultiplex_Stats.htm") into demultiplex_stats_html2
+    file("Unaligned/Demultiplex_Stats.htm") into (demultiplex_stats_html, demultiplex_stats_html2)
     file("Unaligned/**.fastq.gz") into fastq_output
+    file("Unaligned/*") into bcl2fastq_output_all
 
     script:
     """
@@ -120,6 +119,17 @@ process bcl2fastq {
     """
 }
 
+// filter out everything that is not a directory in order to find demultiplexing output
+bcl2fastq_output_all.flatMap()
+                    .filter { item ->
+                        item.isDirectory()
+                    }
+                    .filter { item ->
+                        def basename = item.getName()
+                        basename != 'Stats' && basename != 'Reports'
+                    }
+                    .set { bcl2fastq_project_dirs }
+
 // filter out 'Undetermined' fastq files
 fastq_output.flatMap()
             .map{ item ->
@@ -127,7 +137,7 @@ fastq_output.flatMap()
                     return item
                 }
             }
-            .set{ fastq_filtered }
+            .into{ fastq_filtered; fastq_filtered2 }
 
 process fastqc {
     tag { "${fastq}" }

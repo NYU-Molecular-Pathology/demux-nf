@@ -45,6 +45,9 @@ run-NGS580: install
 	module unload java && module load java/1.8 && \
 	./nextflow run main.nf -profile phoenix,NGS580 --project $(PROJECT) $(EP)
 
+run-Archer: install
+	module unload java && module load java/1.8 && \
+	./nextflow run main.nf -profile phoenix,Archer --project $(PROJECT) $(EP)
 
 
 
