@@ -2,7 +2,7 @@ SHELL:=/bin/bash
 PROJECT:=
 SEQDIR:=/ifs/data/molecpathlab/quicksilver
 PRODDIR:=/ifs/data/molecpathlab/production/Demultiplexing
-NXF_VER:=0.28.0
+NXF_VER:=0.29.0
 EP:=
 
 none:
@@ -43,11 +43,13 @@ update-submodules:
 # ~~~~~ RUN PIPELINE ~~~~~ #
 run-NGS580: install
 	module unload java && module load java/1.8 && \
-	./nextflow run main.nf -profile phoenix,NGS580 --project $(PROJECT) $(EP)
+	./nextflow run main.nf -profile phoenix,NGS580 --project $(PROJECT) $(EP) && \
+	./nextflow run email.nf -profile phoenix,NGS580 --project $(PROJECT) $(EP)
 
 run-Archer: install
 	module unload java && module load java/1.8 && \
-	./nextflow run main.nf -profile phoenix,Archer --project $(PROJECT) $(EP)
+	./nextflow run main.nf -profile phoenix,Archer --project $(PROJECT) $(EP) && \
+	./nextflow run email.nf -profile phoenix,Archer --project $(PROJECT) $(EP)
 
 
 
