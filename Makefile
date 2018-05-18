@@ -11,26 +11,30 @@ none:
 ./nextflow:
 	if [ "$$( module > /dev/null 2>&1; echo $$?)" -eq 0 ]; then module unload java && module load java/1.8 ; fi ; \
 	export NXF_VER="$(NXF_VER)" && \
+	printf ">>> Intalling Nextflow in the local directory" && \
 	curl -fsSL get.nextflow.io | bash
 
 install: ./nextflow
 
+check-seqdir:
+	@if [ ! -d "$(SEQDIR)" ]; then printf ">>> ERROR: SEQDIR does not exist: $(SEQDIR)\n" ; exit 1; fi
+
+check-proddir:
+	@if [ ! -d "$(PRODDIR)" ]; then printf ">>> ERROR: PRODDIR does not exist: $(PRODDIR)\n"; exit 1; fi
+
 # set up a new sequencing directory with a copy of this repo for demultiplexing
-deploy:
-	[ -z "$(PROJECT)" ] && printf ">>> invalid PROJECT specified: $(PROJECT)\n" && exit 1 || :
-	[ ! -d "$(SEQDIR)/$(PROJECT)" ] && printf ">>> invalid PROJECT specified: $(PROJECT)\n" && exit 1 || :
-	[ ! -d "$(SEQDIR)/$(PROJECT)/Data/Intensities/BaseCalls" ] && printf ">>> Basecalls directory does not exist for run: $(SEQDIR)/$(PROJECT)\n" && exit 1 || :
-	project_dir="$(SEQDIR)/$(PROJECT)" && \
-	basecalls_dir="$(SEQDIR)/$(PROJECT)/Data/Intensities/BaseCalls" && \
+deploy: check-seqdir check-proddir
+	@[ -z "$(PROJECT)" ] && printf ">>> invalid PROJECT specified: $(PROJECT)\n" && exit 1 || :
+	@[ ! -d "$(SEQDIR)/$(PROJECT)" ] && printf ">>> Project directory does not exist: $(SEQDIR)/$(PROJECT)\n" && exit 1 || :
+	@[ ! -d "$(SEQDIR)/$(PROJECT)/Data/Intensities/BaseCalls" ] && printf ">>> Basecalls directory does not exist for run: $(SEQDIR)/$(PROJECT)\n" && exit 1 || :
+	@project_dir="$(SEQDIR)/$(PROJECT)" && \
 	production_dir="$(PRODDIR)/$(PROJECT)" && \
 	repo_dir="$${PWD}" && \
 	output_dir="$${production_dir}/$$(basename $${repo_dir})" && \
-	mkdir "$${production_dir}" && \
-	echo ">>> Setting up for demultiplexing of $${project_dir} in output directory: $${output_dir}" && \
-	cd "$${production_dir}" && \
-	git clone --recursive $${repo_dir} && \
-	run_cmd="make run-NGS580 PROJECT=$(PROJECT)" && \
-	printf ">>> please run the following command to start demultiplexing:\n\n%s\n%s\n" "cd $${output_dir}" "$${run_cmd}" 
+	echo ">>> Setting up for demultiplexing of $(PROJECT) in directory: $${production_dir}" && \
+	git clone --recursive "$${repo_dir}" "$${production_dir}" && \
+	( cd  "$${production_dir}" && ln -s "$${project_dir}" seq_dir ) && \
+	echo ">>> Demultiplexing directory prepared: $${production_dir}"
 
 # update the repo remote for ssh
 remote:
@@ -38,7 +42,7 @@ remote:
 
 # pull the latest version of all submodules
 # https://stackoverflow.com/a/1032653/5359531
-update-submodules:
+update-submodules: remote
 	git submodule update --recursive --remote --init
 
 # ~~~~~ RUN PIPELINE ~~~~~ #
