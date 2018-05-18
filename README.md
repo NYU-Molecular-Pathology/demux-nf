@@ -1,9 +1,9 @@
 # demux-nf
-Nextflow pipeline for demultiplexing
+Nextflow pipeline for demultiplexing.
 
 # Installation
 
-Clone this repository
+Clone this repository:
 
 ```
 git clone --recursive https://github.com/NYU-Molecular-Pathology/demux-nf.git
@@ -11,9 +11,15 @@ cd demux-nf
 ```
 # Usage
 
-The easiest way to run the pipeline is by using the included `Makefile`, which has shortcuts to preset execution configurations, with the sequencer output directory name provided as an argument to `PROJECT`. Extra parameters for Nextflow can be provided with `EP`.
+The pipeline is run with Nextflow from the `main.nf` file. Example:
 
-_NOTE:_ By default, the pipeline will run in the _current session_ in your terminal. To run the pipeline in the background, it is recommended to either run it in `screen` or use the included cluster submission script (`submit.sh`).
+```
+nextflow run main.nf
+```
+
+Many pipeline configuration settings are available and required. The easiest way to run the pipeline is by using the included `Makefile`, which has shortcuts to preset execution configurations, with the sequencer output directory name provided as an argument to `PROJECT`. Extra parameters for Nextflow can be provided with `EP`.
+
+_NOTE:_ By default, the pipeline will run in the _current session_ in your terminal. To run the pipeline in the background, it is recommended to either run it in `screen` or submit it as a job on the HPC.
 
 ## NYU phoenix HPC cluster
 
@@ -65,10 +71,10 @@ make run-NGS580 PROJECT=180213_NB501073_0034_AHWJLLAFXX EP="--samplesheet /ifs/d
 
 ### Cluster submission script
 
-The included `submit.sh` script can be used to run Nextflow as a cluster job. Just pass it all the args that be passed to the `Makefile`. Example usage:
+The parent Nextflow process can be submitted to run as a `qsub` job with the `submit-phoenix-NGS580` Makefile recipe. Example: 
 
 ```
-./submit.sh 'run-NGS580 PROJECT=180213_NB501073_0034_AHWJLLAFXX EP="--samplesheet /ifs/data/molecpathlab/quicksilver/180213_NB501073_0034_AHWJLLAFXX/Data/Intensities/BaseCalls/og.SampleSheet.csv -resume"'
+make submit-phoenix-NGS580 PROJECT=demultiplex-demo-run EP='--samplesheet SampleSheet.csv --run_dir /data/180316_NB501073_0036_AH3VFKBGX5'
 ```
 
 _NOTE:_ This only runs the parent Nextflow process as a cluster job; Nextflow already submits its processes as cluster jobs themselves as per configurations. 
