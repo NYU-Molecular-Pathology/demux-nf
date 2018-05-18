@@ -2,14 +2,14 @@ SHELL:=/bin/bash
 PROJECT:=
 SEQDIR:=/ifs/data/molecpathlab/quicksilver
 PRODDIR:=/ifs/data/molecpathlab/production/Demultiplexing
-NXF_VER:=0.28.0
+NXF_VER:=0.29.0
 EP:=
 
 none:
 
 # ~~~~~ SETUP PIPELINE ~~~~~ #
 ./nextflow:
-	module unload java && module load java/1.8 && \
+	if [ "$$( module > /dev/null 2>&1; echo $$?)" -eq 0 ]; then module unload java && module load java/1.8 ; fi ; \
 	export NXF_VER="$(NXF_VER)" && \
 	curl -fsSL get.nextflow.io | bash
 
@@ -17,37 +17,43 @@ install: ./nextflow
 
 # set up a new sequencing directory with a copy of this repo for demultiplexing
 deploy:
-	[ -z "$(PROJECT)" ] && printf "invalid PROJECT specified: $(PROJECT)\n" && exit 1 || :
-	[ ! -d "$(SEQDIR)/$(PROJECT)" ] && printf "invalid PROJECT specified: $(PROJECT)\n" && exit 1 || :
-	[ ! -d "$(SEQDIR)/$(PROJECT)/Data/Intensities/BaseCalls" ] && printf "Basecalls directory does not exist for run: $(SEQDIR)/$(PROJECT)\n" && exit 1 || :
+	[ -z "$(PROJECT)" ] && printf ">>> invalid PROJECT specified: $(PROJECT)\n" && exit 1 || :
+	[ ! -d "$(SEQDIR)/$(PROJECT)" ] && printf ">>> invalid PROJECT specified: $(PROJECT)\n" && exit 1 || :
+	[ ! -d "$(SEQDIR)/$(PROJECT)/Data/Intensities/BaseCalls" ] && printf ">>> Basecalls directory does not exist for run: $(SEQDIR)/$(PROJECT)\n" && exit 1 || :
 	project_dir="$(SEQDIR)/$(PROJECT)" && \
 	basecalls_dir="$(SEQDIR)/$(PROJECT)/Data/Intensities/BaseCalls" && \
 	production_dir="$(PRODDIR)/$(PROJECT)" && \
 	repo_dir="$${PWD}" && \
 	output_dir="$${production_dir}/$$(basename $${repo_dir})" && \
 	mkdir "$${production_dir}" && \
-	echo "> Setting up for demultiplexing of $${project_dir} in output directory: $${output_dir}" && \
+	echo ">>> Setting up for demultiplexing of $${project_dir} in output directory: $${output_dir}" && \
 	cd "$${production_dir}" && \
 	git clone --recursive $${repo_dir} && \
 	run_cmd="make run-NGS580 PROJECT=$(PROJECT)" && \
-	printf "> please run the following command to start demultiplexing:\n\n%s\n%s\n" "cd $${output_dir}" "$${run_cmd}" 
+	printf ">>> please run the following command to start demultiplexing:\n\n%s\n%s\n" "cd $${output_dir}" "$${run_cmd}" 
 
 # update the repo remote for ssh
 remote:
 	git remote set-url origin git@github.com:NYU-Molecular-Pathology/demux-nf.git
 
 # pull the latest version of all submodules
+# https://stackoverflow.com/a/1032653/5359531
 update-submodules:
-	git submodule update --recursive --remote
+	git submodule update --recursive --remote --init
 
 # ~~~~~ RUN PIPELINE ~~~~~ #
 run-NGS580: install
-	module unload java && module load java/1.8 && \
-	./nextflow run main.nf -profile phoenix,NGS580 --project $(PROJECT) $(EP)
+	if [ "$$( module > /dev/null 2>&1; echo $$?)" -eq 0 ]; then module unload java && module load java/1.8 ; fi ; \
+	if [ -n "$(PROJECT)" ]; then \
+	./nextflow run main.nf -resume -profile phoenix,NGS580 --projectID $(PROJECT) $(EP) ; \
+	elif [ -z "$(PROJECT)" ]; then \
+	./nextflow run main.nf -resume -profile phoenix,NGS580 $(EP) ; \
+	fi
+
 
 run-Archer: install
-	module unload java && module load java/1.8 && \
-	./nextflow run main.nf -profile phoenix,Archer --project $(PROJECT) $(EP)
+	if [ "$$( module > /dev/null 2>&1; echo $$?)" -eq 0 ]; then module unload java && module load java/1.8 ; fi ; \
+	./nextflow run main.nf -profile phoenix,Archer --projectID $(PROJECT) $(EP)
 
 
 
