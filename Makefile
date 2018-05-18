@@ -59,6 +59,13 @@ run-Archer: install
 	./nextflow run email.nf -profile phoenix,NGS580 --project $(PROJECT) $(EP)
 
 
+# submit the parent Nextflow process to phoenix HPC as a qsub job
+submit-phoenix-NGS580:
+	@qsub_logdir="logs" ; \
+	mkdir -p "$${qsub_logdir}" ; \
+	job_name="demux-nf" ; \
+	echo 'make run-NGS580 EP="$(EP)" PROJECT="$(PROJECT)"' | qsub -wd "$$PWD" -o :$${qsub_logdir}/ -e :$${qsub_logdir}/ -j y -N "$$job_name" -q all.q 
+
 # ~~~~~ CLEANUP ~~~~~ #
 clean-traces:
 	rm -f trace*.txt.*
