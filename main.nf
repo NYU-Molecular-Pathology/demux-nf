@@ -243,10 +243,9 @@ process convert_run_params{
 
 process collect_email_attachments {
     tag { "${attachments}" }
-    publishDir "${params.output_dir}/email_attachments", mode: 'copy', overwrite: true
+    publishDir "${params.output_dir}/email/attachments", mode: 'copy', overwrite: true
     stageInMode "copy"
     executor "local"
-    echo true
 
     input:
     file(attachments: "*") from samplesheet_copy2.concat(demultiplex_stats_html, demultiplexing_report_html, run_params_tsv, run_RTAComplete_txt, multiqc_report_html ).collect()
@@ -261,7 +260,6 @@ process collect_email_attachments {
 }
 
 // ~~~~~~~~~~~~~~~ PIPELINE COMPLETION EVENTS ~~~~~~~~~~~~~~~~~~~ //
-def attachments =  email_attachments.toList().getVal()
 workflow.onComplete {
     def status = "NA"
     if(workflow.success) {
@@ -299,17 +297,10 @@ workflow.onComplete {
         """
         .stripIndent()
         // Total CPU-Hours   : ${workflow.stats.getComputeTimeString() ?: '-'}
-    if(params.pipeline_email) {
-        sendMail {
-            to "${params.email_to}"
-            from "${params.email_from}"
-            attach attachments
-            subject "[${params.workflow_label}] ${status}: ${params.projectID}"
-            body
-            """
-            ${msg}
-            """
-            .stripIndent()
-        }
-    }
+    // save hard-copies of the custom email since it keeps breaking inside this pipeline
+    def subject = "[${params.workflow_label}] ${status}: ${params.projectID}"
+    def email_subject = new File("${params.output_dir}/email/subject.txt")
+    email_subject.write "${subject}"
+    def email_body = new File("${params.output_dir}/email/body.txt")
+    email_body.write "${msg}".stripIndent()
 }

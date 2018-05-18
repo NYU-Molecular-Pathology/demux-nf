@@ -45,16 +45,18 @@ update-submodules:
 run-NGS580: install
 	if [ "$$( module > /dev/null 2>&1; echo $$?)" -eq 0 ]; then module unload java && module load java/1.8 ; fi ; \
 	if [ -n "$(PROJECT)" ]; then \
-	./nextflow run main.nf -resume -profile phoenix,NGS580 --projectID $(PROJECT) $(EP) ; \
+	./nextflow run main.nf -resume -profile phoenix,NGS580 --projectID $(PROJECT) $(EP) && \
+	./nextflow run email.nf -profile phoenix,NGS580 --project $(PROJECT) $(EP) ; \
 	elif [ -z "$(PROJECT)" ]; then \
-	./nextflow run main.nf -resume -profile phoenix,NGS580 $(EP) ; \
+	./nextflow run main.nf -resume -profile phoenix,NGS580 $(EP) && \
+	./nextflow run email.nf -profile phoenix,NGS580 --project $(PROJECT) $(EP) ; \
 	fi
 
 
 run-Archer: install
 	if [ "$$( module > /dev/null 2>&1; echo $$?)" -eq 0 ]; then module unload java && module load java/1.8 ; fi ; \
-	./nextflow run main.nf -profile phoenix,Archer --projectID $(PROJECT) $(EP)
-
+	./nextflow run main.nf -profile phoenix,Archer --projectID $(PROJECT) $(EP) && \
+	./nextflow run email.nf -profile phoenix,NGS580 --project $(PROJECT) $(EP)
 
 
 # ~~~~~ CLEANUP ~~~~~ #
