@@ -1,11 +1,11 @@
 // check some params from configs
-if(params.projectID == null){
-    log.warn "projectID ID is not set, use '--projectID projectID'"
+if(params.runID == null){
+    log.warn "runID ID is not set, use '--runID runID'"
 }
 
 def run_dir
 if(params.run_dir == null){
-    run_dir = "${params.sequencer_dir}/${params.projectID}"
+    run_dir = "${params.sequencer_dir}/${params.runID}"
     log.warn "Run dir not provided, attempting to use default location: ${run_dir}"
 } else {
     run_dir = "${params.run_dir}"
@@ -25,7 +25,7 @@ if(params.samplesheet == null){
 }
 
 log.info "~~~~~~~ Demultiplexing Pipeline ~~~~~~~"
-log.info "* Project:         ${params.projectID}"
+log.info "* Run ID:         ${params.runID}"
 log.info "* Sequencer dir:   ${params.sequencer_dir}"
 log.info "* Run dir:         ${run_dir}"
 log.info "* Basecalls dir:   ${params.basecalls_dir}"
@@ -48,6 +48,7 @@ process validate_run_completion {
     file("RTAComplete.txt") into run_RTAComplete_txt
     file("RunCompletionStatus.xml") into run_CompletionStatus_xml
     file("RunParameters.xml") into run_params_xml
+    val('') into done_validate_run_completion
 
     script:
     """
@@ -67,6 +68,7 @@ process validate_samplesheet {
 
     output:
     file("${samplesheet}") into validated_samplesheet
+    val('') into done_validate_samplesheet
 
     script:
     """
@@ -84,12 +86,32 @@ process copy_samplesheet {
 
     output:
     file("SampleSheet.csv") into (samplesheet_copy, samplesheet_copy2)
+    val('') into done_copy_samplesheet
 
     script:
     """
     cp "input_sheet.csv" SampleSheet.csv
     """
 
+}
+
+
+process convert_run_params{
+    tag { "${run_params_xml_file}" }
+    publishDir "${params.output_dir}/", mode: 'copy', overwrite: true
+    executor "local"
+
+    input:
+    file(run_params_xml_file) from run_params_xml
+
+    output:
+    file("RunParameters.tsv") into run_params_tsv
+    val('') into done_convert_run_params
+
+    script:
+    """
+    RunParametersXML2tsv.py
+    """
 }
 
 process bcl2fastq {
@@ -104,6 +126,7 @@ process bcl2fastq {
     file("Unaligned/Demultiplex_Stats.htm") into (demultiplex_stats_html, demultiplex_stats_html2)
     file("Unaligned/**.fastq.gz") into fastq_output
     file("Unaligned/*") into bcl2fastq_output_all
+    val('') into done_bcl2fastq
 
     script:
     """
@@ -165,6 +188,7 @@ process fastqc {
     file(output_html)
     file(output_zip)
     val(fastq) into fastqc_fastqs
+    val('') into done_fastqc
 
     script:
     output_html = "${fastq}".replaceFirst(/.fastq.gz$/, "_fastqc.html")
@@ -174,14 +198,22 @@ process fastqc {
     """
 }
 
+// ~~~~~~~~ REPORTING ~~~~~~~ //
+done_validate_run_completion.concat(
+    done_validate_samplesheet,
+    done_copy_samplesheet,
+    done_convert_run_params,
+    done_bcl2fastq,
+    done_fastqc
+    ).into { all_done1; all_done2; all_done3 }
+
 process multiqc {
     tag { "${output_dir}" }
     publishDir "${params.output_dir}/multiqc", mode: 'copy', overwrite: true
     executor "local"
 
     input:
-    val(items) from bcl2fastq_output.mix(fastqc_fastqs)
-                                            .collect() // force it to wait for all steps to finish
+    val(items) from all_done1.collect() // force it to wait for all steps to finish
     file(output_dir) from Channel.fromPath("${params.output_dir}")
 
     output:
@@ -192,16 +224,6 @@ process multiqc {
     """
     multiqc "${output_dir}"
     """
-    // echo \$PATH
-    // echo \${PYTHONPATH:-"not set"}
-    // echo \${PYTHONHOME:-"not set"}
-    // module list
-    //
-    // python --version
-    // which python
-    //
-    // which multiqc
-    // multiqc --version
 }
 
 process demultiplexing_report {
@@ -211,6 +233,7 @@ process demultiplexing_report {
     stageInMode "copy"
 
     input:
+    val(items) from all_done2.collect() // force it to wait for all steps to finish
     set file(template_dir), file(demultiplex_stats) from report_template_dir.combine(demultiplex_stats_html2)
 
     output:
@@ -224,22 +247,6 @@ process demultiplexing_report {
     """
 }
 
-process convert_run_params{
-    tag { "${run_params_xml_file}" }
-    publishDir "${params.output_dir}/", mode: 'copy', overwrite: true
-    executor "local"
-
-    input:
-    file(run_params_xml_file) from run_params_xml
-
-    output:
-    file("RunParameters.tsv") into run_params_tsv
-
-    script:
-    """
-    RunParametersXML2tsv.py
-    """
-}
 
 process collect_email_attachments {
     tag { "${attachments}" }
@@ -248,6 +255,7 @@ process collect_email_attachments {
     executor "local"
 
     input:
+    val(items) from all_done3.collect() // force it to wait for all steps to finish
     file(attachments: "*") from samplesheet_copy2.concat(demultiplex_stats_html, demultiplexing_report_html, run_params_tsv, run_RTAComplete_txt, multiqc_report_html ).collect()
 
     output:
@@ -298,7 +306,7 @@ workflow.onComplete {
         .stripIndent()
         // Total CPU-Hours   : ${workflow.stats.getComputeTimeString() ?: '-'}
     // save hard-copies of the custom email since it keeps breaking inside this pipeline
-    def subject = "[${params.workflow_label}] ${status}: ${params.projectID}"
+    def subject = "[${params.workflow_label}] ${status}: ${params.runID}"
     def email_subject = new File("${params.output_dir}/email/subject.txt")
     email_subject.write "${subject}"
     def email_body = new File("${params.output_dir}/email/body.txt")

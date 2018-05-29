@@ -1,5 +1,6 @@
 SHELL:=/bin/bash
-PROJECT:=
+RUNID:=
+# "180131_NB501073_0032_AHT5F3BGX3"
 SEQDIR:=/ifs/data/molecpathlab/quicksilver
 PRODDIR:=/ifs/data/molecpathlab/production/Demultiplexing
 NXF_VER:=0.29.0
@@ -24,14 +25,14 @@ check-proddir:
 
 # set up a new sequencing directory with a copy of this repo for demultiplexing
 deploy: check-seqdir check-proddir
-	@[ -z "$(PROJECT)" ] && printf ">>> invalid PROJECT specified: $(PROJECT)\n" && exit 1 || :
-	@[ ! -d "$(SEQDIR)/$(PROJECT)" ] && printf ">>> Project directory does not exist: $(SEQDIR)/$(PROJECT)\n" && exit 1 || :
-	@[ ! -d "$(SEQDIR)/$(PROJECT)/Data/Intensities/BaseCalls" ] && printf ">>> Basecalls directory does not exist for run: $(SEQDIR)/$(PROJECT)\n" && exit 1 || :
-	@project_dir="$(SEQDIR)/$(PROJECT)" && \
-	production_dir="$(PRODDIR)/$(PROJECT)" && \
+	@[ -z "$(RUNID)" ] && printf ">>> invalid RUNID specified: $(RUNID)\n" && exit 1 || :
+	@[ ! -d "$(SEQDIR)/$(RUNID)" ] && printf ">>> Project directory does not exist: $(SEQDIR)/$(RUNID)\n" && exit 1 || :
+	@[ ! -d "$(SEQDIR)/$(RUNID)/Data/Intensities/BaseCalls" ] && printf ">>> Basecalls directory does not exist for run: $(SEQDIR)/$(RUNID)\n" && exit 1 || :
+	@project_dir="$(SEQDIR)/$(RUNID)" && \
+	production_dir="$(PRODDIR)/$(RUNID)" && \
 	repo_dir="$${PWD}" && \
 	output_dir="$${production_dir}/$$(basename $${repo_dir})" && \
-	echo ">>> Setting up for demultiplexing of $(PROJECT) in directory: $${production_dir}" && \
+	echo ">>> Setting up for demultiplexing of $(RUNID) in directory: $${production_dir}" && \
 	git clone --recursive "$${repo_dir}" "$${production_dir}" && \
 	( cd  "$${production_dir}" && ln -s "$${project_dir}" seq_dir ) && \
 	echo ">>> Demultiplexing directory prepared: $${production_dir}"
@@ -48,19 +49,19 @@ update-submodules: remote
 # ~~~~~ RUN PIPELINE ~~~~~ #
 run-NGS580: install
 	if [ "$$( module > /dev/null 2>&1; echo $$?)" -eq 0 ]; then module unload java && module load java/1.8 ; fi ; \
-	if [ -n "$(PROJECT)" ]; then \
-	./nextflow run main.nf -resume -profile phoenix,NGS580 --projectID $(PROJECT) $(EP) && \
-	./nextflow run email.nf -profile phoenix,NGS580 --projectID "$(PROJECT)" $(EP) ; \
-	elif [ -z "$(PROJECT)" ]; then \
+	if [ -n "$(RUNID)" ]; then \
+	./nextflow run main.nf -resume -profile phoenix,NGS580 --runID $(RUNID) $(EP) && \
+	./nextflow run email.nf -profile phoenix,NGS580 --runID "$(RUNID)" $(EP) ; \
+	elif [ -z "$(RUNID)" ]; then \
 	./nextflow run main.nf -resume -profile phoenix,NGS580 $(EP) && \
-	./nextflow run email.nf -profile phoenix,NGS580 --projectID "$(PROJECT)" $(EP) ; \
+	./nextflow run email.nf -profile phoenix,NGS580 --runID "$(RUNID)" $(EP) ; \
 	fi
 
 
 run-Archer: install
 	if [ "$$( module > /dev/null 2>&1; echo $$?)" -eq 0 ]; then module unload java && module load java/1.8 ; fi ; \
-	./nextflow run main.nf -profile phoenix,Archer --projectID "$(PROJECT)" $(EP) && \
-	./nextflow run email.nf -profile phoenix,Archer --projectID "$(PROJECT)" $(EP)
+	./nextflow run main.nf -resume -profile phoenix,Archer --runID "$(RUNID)" $(EP) && \
+	./nextflow run email.nf -resume -profile phoenix,Archer --runID "$(RUNID)" $(EP)
 
 
 # submit the parent Nextflow process to phoenix HPC as a qsub job
@@ -68,13 +69,13 @@ submit-phoenix-NGS580:
 	@qsub_logdir="logs" ; \
 	mkdir -p "$${qsub_logdir}" ; \
 	job_name="demux-nf" ; \
-	echo 'make run-NGS580 EP="$(EP)" PROJECT="$(PROJECT)"' | qsub -wd "$$PWD" -o :$${qsub_logdir}/ -e :$${qsub_logdir}/ -j y -N "$$job_name" -q all.q 
+	echo 'make run-NGS580 EP="$(EP)" RUNID="$(RUNID)"' | qsub -wd "$$PWD" -o :$${qsub_logdir}/ -e :$${qsub_logdir}/ -j y -N "$$job_name" -q all.q 
 
 submit-phoenix-Archer:
 	@qsub_logdir="logs" ; \
 	mkdir -p "$${qsub_logdir}" ; \
 	job_name="demux-nf" ; \
-	echo 'make run-Archer EP="$(EP)" PROJECT="$(PROJECT)"' | qsub -wd "$$PWD" -o :$${qsub_logdir}/ -e :$${qsub_logdir}/ -j y -N "$$job_name" -q all.q 
+	echo 'make run-Archer EP="$(EP)" RUNID="$(RUNID)"' | qsub -wd "$$PWD" -o :$${qsub_logdir}/ -e :$${qsub_logdir}/ -j y -N "$$job_name" -q all.q 
 
 
 # ~~~~~ CLEANUP ~~~~~ #
