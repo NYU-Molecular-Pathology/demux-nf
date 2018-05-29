@@ -37,7 +37,7 @@ Channel.from( "${run_dir}" ).into { run_dir_ch; run_dir_ch2 } // dont stage run 
 Channel.fromPath( params.report_template_dir ).set { report_template_dir }
 
 process validate_run_completion {
-    tag { "${run_dir}" }
+    tag "${run_dir}"
     executor "local"
     publishDir "${params.output_dir}/", mode: 'copy', overwrite: true
 
@@ -60,7 +60,7 @@ process validate_run_completion {
 }
 
 process validate_samplesheet {
-    tag { "${samplesheet}" }
+    tag "${samplesheet}"
     executor "local"
 
     input:
@@ -77,7 +77,7 @@ process validate_samplesheet {
 }
 
 process copy_samplesheet {
-    tag { "${samplesheet}" }
+    tag "${samplesheet}"
     executor "local"
     publishDir "${params.output_dir}/", mode: 'copy', overwrite: true
 
@@ -97,7 +97,7 @@ process copy_samplesheet {
 
 
 process convert_run_params{
-    tag { "${run_params_xml_file}" }
+    tag "${run_params_xml_file}"
     publishDir "${params.output_dir}/", mode: 'copy', overwrite: true
     executor "local"
 
@@ -115,7 +115,7 @@ process convert_run_params{
 }
 
 process bcl2fastq {
-    tag { "${run_dir_path}" }
+    tag "${run_dir_path}"
     publishDir "${params.output_dir}/", mode: 'copy', overwrite: true
 
     input:
@@ -178,7 +178,7 @@ fastq_output.flatMap()
             .into{ fastq_filtered; fastq_filtered2 }
 
 process fastqc {
-    tag { "${fastq}" }
+    tag "${fastq}"
     publishDir "${params.output_dir}/fastqc", mode: 'copy', overwrite: true
 
     input:
@@ -208,7 +208,7 @@ done_validate_run_completion.concat(
     ).into { all_done1; all_done2; all_done3 }
 
 process multiqc {
-    tag { "${output_dir}" }
+    tag "${output_dir}"
     publishDir "${params.output_dir}/multiqc", mode: 'copy', overwrite: true
     executor "local"
 
@@ -222,12 +222,13 @@ process multiqc {
 
     script:
     """
+    ls -l "${output_dir}/"
     multiqc "${output_dir}"
     """
 }
 
 process demultiplexing_report {
-    tag { "${template_dir}" }
+    tag "${template_dir}"
     executor "local"
     publishDir "${params.output_dir}/demultiplexing-report", mode: 'copy', overwrite: true
     stageInMode "copy"
@@ -249,7 +250,7 @@ process demultiplexing_report {
 
 
 process collect_email_attachments {
-    tag { "${attachments}" }
+    tag "${attachments}"
     publishDir "${params.output_dir}/email/attachments", mode: 'copy', overwrite: true
     stageInMode "copy"
     executor "local"
@@ -284,7 +285,7 @@ workflow.onComplete {
         Ending time       : ${workflow.complete.format('dd-MMM-yyyy HH:mm:ss')} (duration: ${workflow.duration})
         Launch directory  : ${workflow.launchDir}
         Work directory    : ${workflow.workDir.toUriString()}
-        Project directory : ${workflow.projectDir}
+        Nextflow directory : ${workflow.projectDir}
         Run directory     : ${params.run_dir}
         Script name       : ${workflow.scriptName ?: '-'}
         Script ID         : ${workflow.scriptId ?: '-'}

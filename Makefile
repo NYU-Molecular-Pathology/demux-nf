@@ -51,17 +51,17 @@ run-NGS580: install
 	if [ "$$( module > /dev/null 2>&1; echo $$?)" -eq 0 ]; then module unload java && module load java/1.8 ; fi ; \
 	if [ -n "$(RUNID)" ]; then \
 	./nextflow run main.nf -resume -profile phoenix,NGS580 --runID $(RUNID) $(EP) && \
-	./nextflow run email.nf -profile phoenix,NGS580 --runID "$(RUNID)" $(EP) ; \
+	./nextflow run email.nf $(EP) ; \
 	elif [ -z "$(RUNID)" ]; then \
 	./nextflow run main.nf -resume -profile phoenix,NGS580 $(EP) && \
-	./nextflow run email.nf -profile phoenix,NGS580 --runID "$(RUNID)" $(EP) ; \
+	./nextflow run email.nf $(EP) ; \
 	fi
 
 
 run-Archer: install
 	if [ "$$( module > /dev/null 2>&1; echo $$?)" -eq 0 ]; then module unload java && module load java/1.8 ; fi ; \
 	./nextflow run main.nf -resume -profile phoenix,Archer --runID "$(RUNID)" $(EP) && \
-	./nextflow run email.nf -resume -profile phoenix,Archer --runID "$(RUNID)" $(EP)
+	./nextflow run email.nf $(EP)
 
 
 # submit the parent Nextflow process to phoenix HPC as a qsub job
