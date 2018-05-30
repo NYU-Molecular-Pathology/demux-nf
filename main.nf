@@ -25,7 +25,7 @@ if(params.samplesheet == null){
 }
 
 log.info "~~~~~~~ Demultiplexing Pipeline ~~~~~~~"
-log.info "* Run ID:         ${params.runID}"
+log.info "* Run ID:          ${params.runID}"
 log.info "* Sequencer dir:   ${params.sequencer_dir}"
 log.info "* Run dir:         ${run_dir}"
 log.info "* Basecalls dir:   ${params.basecalls_dir}"
@@ -179,16 +179,15 @@ fastq_output.flatMap()
 
 process fastqc {
     tag "${fastq}"
-    publishDir "${params.output_dir}/fastqc", mode: 'copy', overwrite: true
+    publishDir "${params.output_dir}/fastqc", mode: 'move', overwrite: true
 
     input:
     file(fastq) from fastq_filtered
 
     output:
-    file(output_html)
-    file(output_zip)
-    val(fastq) into fastqc_fastqs
-    val('') into done_fastqc
+    file("${output_html}")
+    file("${output_zip}")
+    val("${output_html}") into done_fastqc
 
     script:
     output_html = "${fastq}".replaceFirst(/.fastq.gz$/, "_fastqc.html")
@@ -209,7 +208,7 @@ done_validate_run_completion.concat(
 
 process multiqc {
     tag "${output_dir}"
-    publishDir "${params.output_dir}/multiqc", mode: 'copy', overwrite: true
+    publishDir "${params.output_dir}/multiqc", mode: 'move', overwrite: true
     executor "local"
 
     input:
@@ -223,6 +222,7 @@ process multiqc {
     script:
     """
     ls -l "${output_dir}/"
+    ls -l "${output_dir}/fastqc"
     multiqc "${output_dir}"
     """
 }
@@ -230,7 +230,7 @@ process multiqc {
 process demultiplexing_report {
     tag "${template_dir}"
     executor "local"
-    publishDir "${params.output_dir}/demultiplexing-report", mode: 'copy', overwrite: true
+    publishDir "${params.output_dir}/demultiplexing-report", mode: 'move', overwrite: true
     stageInMode "copy"
 
     input:
@@ -251,7 +251,7 @@ process demultiplexing_report {
 
 process collect_email_attachments {
     tag "${attachments}"
-    publishDir "${params.output_dir}/email/attachments", mode: 'copy', overwrite: true
+    publishDir "${params.output_dir}/email/attachments", mode: 'move', overwrite: true
     stageInMode "copy"
     executor "local"
 
