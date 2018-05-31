@@ -175,18 +175,18 @@ fastq_output.flatMap()
                     return item
                 }
             }
-            .into{ fastq_filtered; fastq_filtered2 }
+            .set{ fastq_filtered }
 
 process fastqc {
     tag "${fastq}"
-    publishDir "${params.output_dir}/fastqc", mode: 'move', overwrite: true
+    publishDir "${params.output_dir}/fastqc", mode: 'copy', overwrite: true
 
     input:
     file(fastq) from fastq_filtered
 
     output:
     file("${output_html}")
-    file("${output_zip}")
+    file("${output_zip}") into fastqc_zips
     val("${output_html}") into done_fastqc
 
     script:
@@ -207,13 +207,13 @@ done_validate_run_completion.concat(
     ).into { all_done1; all_done2; all_done3 }
 
 process multiqc {
-    tag "${output_dir}"
     publishDir "${params.output_dir}/multiqc", mode: 'move', overwrite: true
     executor "local"
 
     input:
-    val(items) from all_done1.collect() // force it to wait for all steps to finish
-    file(output_dir) from Channel.fromPath("${params.output_dir}")
+    // val(items) from all_done1.collect() // force it to wait for all steps to finish
+    // file(output_dir) from Channel.fromPath("${params.output_dir}")
+    file(all_fastqc_zips: "*") from fastqc_zips.collect()
 
     output:
     file "multiqc_report.html" into multiqc_report_html
@@ -221,9 +221,7 @@ process multiqc {
 
     script:
     """
-    ls -l "${output_dir}/"
-    ls -l "${output_dir}/fastqc"
-    multiqc "${output_dir}"
+    multiqc .
     """
 }
 
