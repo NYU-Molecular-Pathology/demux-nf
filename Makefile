@@ -50,17 +50,17 @@ update-submodules: remote
 run-NGS580: install
 	if [ "$$( module > /dev/null 2>&1; echo $$?)" -eq 0 ]; then module unload java && module load java/1.8 ; fi ; \
 	if [ -n "$(RUNID)" ]; then \
-	./nextflow run main.nf -resume -profile phoenix,NGS580 --runID $(RUNID) $(EP) && \
+	./nextflow run main.nf -resume -with-notification -with-timeline -with-trace -with-report -profile phoenix,NGS580 --runID $(RUNID) $(EP) && \
 	./nextflow run email.nf $(EP) ; \
 	elif [ -z "$(RUNID)" ]; then \
-	./nextflow run main.nf -resume -profile phoenix,NGS580 $(EP) && \
+	./nextflow run main.nf -resume -with-notification -with-timeline -with-trace -with-report -profile phoenix,NGS580 $(EP) && \
 	./nextflow run email.nf $(EP) ; \
 	fi
 
 
 run-Archer: install
 	if [ "$$( module > /dev/null 2>&1; echo $$?)" -eq 0 ]; then module unload java && module load java/1.8 ; fi ; \
-	./nextflow run main.nf -resume -profile phoenix,Archer --runID "$(RUNID)" $(EP) && \
+	./nextflow run main.nf -resume -with-notification -with-timeline -with-trace -with-report -profile phoenix,Archer --runID "$(RUNID)" $(EP) && \
 	./nextflow run email.nf $(EP)
 
 
@@ -69,13 +69,13 @@ submit-phoenix-NGS580:
 	@qsub_logdir="logs" ; \
 	mkdir -p "$${qsub_logdir}" ; \
 	job_name="demux-nf" ; \
-	echo 'make run-NGS580 EP="$(EP)" RUNID="$(RUNID)"' | qsub -wd "$$PWD" -o :$${qsub_logdir}/ -e :$${qsub_logdir}/ -j y -N "$$job_name" -q all.q 
+	echo 'make run-NGS580 EP="$(EP)" RUNID="$(RUNID)"' | qsub -wd "$$PWD" -o :$${qsub_logdir}/ -e :$${qsub_logdir}/ -j y -N "$$job_name" -q all.q
 
 submit-phoenix-Archer:
 	@qsub_logdir="logs" ; \
 	mkdir -p "$${qsub_logdir}" ; \
 	job_name="demux-nf" ; \
-	echo 'make run-Archer EP="$(EP)" RUNID="$(RUNID)"' | qsub -wd "$$PWD" -o :$${qsub_logdir}/ -e :$${qsub_logdir}/ -j y -N "$$job_name" -q all.q 
+	echo 'make run-Archer EP="$(EP)" RUNID="$(RUNID)"' | qsub -wd "$$PWD" -o :$${qsub_logdir}/ -e :$${qsub_logdir}/ -j y -N "$$job_name" -q all.q
 
 
 # ~~~~~ CLEANUP ~~~~~ #
@@ -92,7 +92,7 @@ clean-flowcharts:
 	rm -f *.dot.*
 
 clean-output:
-	[ -d output ] && mv output oldoutput && rm -rf oldoutput &	
+	[ -d output ] && mv output oldoutput && rm -rf oldoutput &
 
 clean-work:
 	[ -d work ] && mv work oldwork && rm -rf oldwork &
@@ -101,7 +101,7 @@ clean-work:
 clean: clean-logs clean-traces clean-reports clean-flowcharts
 
 # deletes all pipeline output in current directory
-clean-all: clean clean-output clean-work 
+clean-all: clean clean-output clean-work
 	[ -d .nextflow ] && mv .nextflow .nextflowold && rm -rf .nextflowold &
 	rm -f .nextflow.log
 	rm -f *.png

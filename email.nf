@@ -1,4 +1,4 @@
-params.pipeline_email = false
+// params.pipeline_email = false
 Channel.fromPath("${params.output_dir}/email/attachments/*").set { email_attachments_channel }
 
 String subject_line = new File("${params.output_dir}/email/subject.txt").text
