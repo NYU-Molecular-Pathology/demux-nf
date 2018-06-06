@@ -207,7 +207,7 @@ done_validate_run_completion.concat(
     ).into { all_done1; all_done2; all_done3 }
 
 process multiqc {
-    publishDir "${params.output_dir}/multiqc", mode: 'move', overwrite: true
+    publishDir "${params.output_dir}/multiqc", mode: 'copy', overwrite: true
     executor "local"
 
     input:
@@ -228,7 +228,7 @@ process multiqc {
 process demultiplexing_report {
     tag "${template_dir}"
     executor "local"
-    publishDir "${params.output_dir}/demultiplexing-report", mode: 'move', overwrite: true
+    publishDir "${params.output_dir}/demultiplexing-report", mode: 'copy', overwrite: true
     stageInMode "copy"
 
     input:
