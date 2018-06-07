@@ -91,7 +91,11 @@ publishDir:=output
 workDir:=work
 TRACEFILE:=trace.txt
 
-finalize: finalize-work-rm finalize-output finalize-work-ls finalize-work-stubs
+finalize: 
+	$(MAKE) finalize-work-rm 
+	$(MAKE) finalize-output 
+	$(MAKE) finalize-work-ls 
+	$(MAKE) finalize-work-stubs
 
 ## ~~~ convert all symlinks to their linked items ~~~ ##
 # symlinks in the publishDir to convert to files
@@ -101,7 +105,7 @@ ifneq ($(FIND_FILES),)
 publishDirLinks:=$(shell find $(publishDir)/ -type l)
 endif
 finalize-output:
-	echo ">>> Converting symlinks in output dir '$(publishDir)' to their targets..."
+	@echo ">>> Converting symlinks in output dir '$(publishDir)' to their targets..."
 	$(MAKE) finalize-output-recurse FIND_publishDirLinks=1
 finalize-output-recurse: $(publishDirLinks)
 # convert all symlinks to their linked items
@@ -132,7 +136,7 @@ endif
 # file to write 'ls' contents of 'work' subdirs to
 LSFILE:=.ls.txt
 finalize-work-ls:
-	echo ">>> Writing list of directory contents for each subdir in Nextflow work directory '$(workDir)'..."
+	@echo ">>> Writing list of directory contents for each subdir in Nextflow work directory '$(workDir)'..."
 	$(MAKE) finalize-work-ls-recurse FIND_NXFWORKSUBDIRS=1
 finalize-work-ls-recurse: $(NXFWORKSUBDIRS)
 # print the 'ls' contents of each subdir to a file, or delete the subdir
@@ -154,7 +158,7 @@ ifneq ($(FIND_NXFWORKFILES),)
 NXFWORKFILES:=$(shell find -P "$(workDir)/" -type f ! -regex $(NXFWORKFILESREGEX))
 endif
 finalize-work-stubs:
-	echo ">>> Creating file stubs for pipeline output in Nextflow work directory '$(workDir)'..."
+	@echo ">>> Creating file stubs for pipeline output in Nextflow work directory '$(workDir)'..."
 	$(MAKE) finalize-work-stubs-recurse FIND_NXFWORKFILES=1
 finalize-work-stubs-recurse: $(NXFWORKFILES)
 $(NXFWORKFILES):
@@ -173,7 +177,7 @@ NXFWORKSUBDIRSRM:=$(shell find "$(workDir)/" -maxdepth 2 -mindepth 2)
 HASHPATTERN:=$(shell python -c 'import csv; reader = csv.DictReader(open("$(TRACEFILE)"), delimiter = "\t"); print("|".join([row["hash"] for row in reader]))')
 endif
 finalize-work-rm:
-	echo ">>> Removing subdirs in Nextflow work directory '$(workDir)' which are not included in Nextflow trace file '$(TRACEFILE)'..."
+	@echo ">>> Removing subdirs in Nextflow work directory '$(workDir)' which are not included in Nextflow trace file '$(TRACEFILE)'..."
 	$(MAKE) finalize-work-rm-recurse FIND_NXFWORKSUBDIRSRM=1
 finalize-work-rm-recurse: $(NXFWORKSUBDIRSRM)
 # remove the subdir if its not listed in the trace hashes
