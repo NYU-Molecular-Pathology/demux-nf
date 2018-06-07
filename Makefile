@@ -42,7 +42,6 @@ remote:
 	git remote set-url origin git@github.com:NYU-Molecular-Pathology/demux-nf.git
 
 # pull the latest version of all submodules
-# https://stackoverflow.com/a/1032653/5359531
 update-submodules: remote
 	git submodule update --recursive --remote --init
 
