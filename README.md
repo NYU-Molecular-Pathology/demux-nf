@@ -17,7 +17,7 @@ The pipeline is run with Nextflow from the `main.nf` file. Example:
 nextflow run main.nf
 ```
 
-Many pipeline configuration settings are available and required. The easiest way to run the pipeline is by using the included `Makefile`, which has shortcuts to preset execution configurations, with the sequencer output directory name provided as an argument to `PROJECT`. Extra parameters for Nextflow can be provided with `EP`.
+Many pipeline configuration settings are available and required. The easiest way to run the pipeline is by using the included `Makefile`, which has shortcuts to preset execution configurations, with the sequencer output directory name provided as an argument to `RUNID`. Extra parameters for Nextflow can be provided with `EP`.
 
 _NOTE:_ By default, the pipeline will run in the _current session_ in your terminal. To run the pipeline in the background, it is recommended to either run it in `screen` or submit it as a job on the HPC.
 
@@ -30,15 +30,15 @@ The default configuration is set up for usage on NYU's phoenix HPC cluster. Rele
 The `deploy` recipe can be used to set up a new directory for demultiplexing:
 
 ```
-make deploy PROJECT=<project ID>
+make deploy RUNID=<run ID>
 ```
 
-where `PROJECT` is the name of the directory output by the sequencer. 
+where `RUNID` is the name of the directory output by the sequencer. 
 
 Example:
 
 ```
-make deploy PROJECT=180122_NB501073_0030_AHTCJTBGX3
+make deploy RUNID=180122_NB501073_0030_AHTCJTBGX3
 ```
 
 This will:
@@ -49,32 +49,30 @@ This will:
 
 - clone this repo to that location
 
-- display a sample command to use to run the pipeline in that location
-
 ### NGS580 Demultiplexing on NYU phoenix
 
 ```
-make run-NGS580 PROJECT=<project ID>
+make run-NGS580 RUNID=<run ID>
 ```
 
 - Example:
 
 ```
-make run-NGS580 PROJECT=180213_NB501073_0034_AHWJLLAFXX
+make run-NGS580 RUNID=180316_NB501073_0036_AH3VFKBGX5
 ```
 
 with extra parameters:
 
 ```
-make run-NGS580 PROJECT=180213_NB501073_0034_AHWJLLAFXX EP="--samplesheet /ifs/data/molecpathlab/quicksilver/180213_NB501073_0034_AHWJLLAFXX/Data/Intensities/BaseCalls/og.SampleSheet.csv -resume"
+make run-NGS580 RUNID=180316_NB501073_0036_AH3VFKBGX5 EP="--samplesheet SampleSheet.csv --run_dir /data/180316_NB501073_0036_AH3VFKBGX5"
 ```
 
-### Cluster submission script
+#### HPC Cluster submission script
 
 The parent Nextflow process can be submitted to run as a `qsub` job with the `submit-phoenix-NGS580` Makefile recipe. Example: 
 
 ```
-make submit-phoenix-NGS580 PROJECT=demultiplex-demo-run EP='--samplesheet SampleSheet.csv --run_dir /data/180316_NB501073_0036_AH3VFKBGX5'
+make submit-phoenix-NGS580 RUNID=180316_NB501073_0036_AH3VFKBGX5 EP='--samplesheet SampleSheet.csv --run_dir /data/180316_NB501073_0036_AH3VFKBGX5'
 ```
 
 _NOTE:_ This only runs the parent Nextflow process as a cluster job; Nextflow already submits its processes as cluster jobs themselves as per configurations. 
