@@ -90,6 +90,10 @@ publishDir:=output
 workDir:=work
 TRACEFILE:=trace.txt
 
+# remove extraneous work dirs
+# resolve publishDir output symlinks
+# write work 'ls' files
+# create work dir file stubs
 finalize: 
 	$(MAKE) finalize-work-rm 
 	$(MAKE) finalize-output 
