@@ -242,7 +242,7 @@ process demultiplexing_report {
     set file(template_dir), file(demultiplex_stats) from report_template_dir.combine(demultiplex_stats_html2)
 
     output:
-    file("demultiplexing_report.html") into demultiplexing_report_html
+    file("${report_HTML}") into demultiplexing_report_html
 
     script:
     report_RMD="${params.runID}-demultiplexing_report.Rmd"
