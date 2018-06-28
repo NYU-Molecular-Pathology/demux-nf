@@ -4,3 +4,8 @@ nextflow
 work/
 *.html
 nextseq-report/demultiplexing_report_files/
+trace.txt
+seq_dir
+output/
+*SampleSheet.csv*
+output*

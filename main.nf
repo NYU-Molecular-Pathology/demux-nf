@@ -31,6 +31,9 @@ log.info "* Run dir:         ${run_dir}"
 log.info "* Basecalls dir:   ${params.basecalls_dir}"
 log.info "* Output dir:      ${params.output_dir} "
 log.info "* Samplesheet:     ${params.samplesheet}"
+log.info "* Launch dir:      ${workflow.launchDir}"
+log.info "* Work dir:        ${workflow.workDir}"
+
 
 Channel.fromPath( params.samplesheet ).set { samplesheet_input }
 Channel.from( "${run_dir}" ).into { run_dir_ch; run_dir_ch2 } // dont stage run dir for safety reasons, just pass the path
@@ -86,11 +89,14 @@ process copy_samplesheet {
 
     output:
     file("SampleSheet.csv") into (samplesheet_copy, samplesheet_copy2)
+    file("${params.runID}-SampleSheet.csv")
     val('') into done_copy_samplesheet
 
     script:
+    output_samplesheet = "${params.runID}-SampleSheet.csv"
     """
     cp "input_sheet.csv" SampleSheet.csv
+    cp "input_sheet.csv" "${output_samplesheet}"
     """
 
 }
@@ -207,28 +213,28 @@ done_validate_run_completion.concat(
     ).into { all_done1; all_done2; all_done3 }
 
 process multiqc {
-    publishDir "${params.output_dir}/multiqc", mode: 'copy', overwrite: true
+    publishDir "${params.output_dir}/reports", mode: 'copy', overwrite: true
     executor "local"
 
     input:
-    // val(items) from all_done1.collect() // force it to wait for all steps to finish
-    // file(output_dir) from Channel.fromPath("${params.output_dir}")
     file(all_fastqc_zips: "*") from fastqc_zips.collect()
 
     output:
-    file "multiqc_report.html" into multiqc_report_html
+    file "${output_HTML}" into multiqc_report_html
     file "multiqc_data"
 
     script:
+    output_HTML="${params.runID}-multiqc_report.html"
     """
     multiqc .
+    mv multiqc_report.html "${output_HTML}"
     """
 }
 
 process demultiplexing_report {
     tag "${template_dir}"
     executor "local"
-    publishDir "${params.output_dir}/demultiplexing-report", mode: 'copy', overwrite: true
+    publishDir "${params.output_dir}/reports", mode: 'copy', overwrite: true
     stageInMode "copy"
 
     input:
@@ -239,10 +245,13 @@ process demultiplexing_report {
     file("demultiplexing_report.html") into demultiplexing_report_html
 
     script:
+    report_RMD="${params.runID}-demultiplexing_report.Rmd"
+    report_HTML="${params.runID}-demultiplexing_report.html"
     """
     mv ${demultiplex_stats} "${template_dir}/"
-    compile_Rmd.R "${template_dir}/demultiplexing_report.Rmd"
-    mv "${template_dir}/demultiplexing_report.html" .
+    cp "${template_dir}/demultiplexing_report.Rmd" "${template_dir}/${report_RMD}"
+    compile_Rmd.R "${template_dir}/${report_RMD}"
+    mv "${template_dir}/${report_HTML}" .
     """
 }
 
