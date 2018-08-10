@@ -53,3 +53,12 @@ create: check
 remove:
 	source "$(CONDA)/bin/activate" && \
 	conda env remove -n "$(VAR)"
+
+# ~~~~~ BUILD CONDA PACKAGE ~~~~~ #
+build-bcl2fastq-2.17.1:
+	if [ "$$( module > /dev/null 2>&1; echo $$?)" -eq 0 ]; then module unload python; fi ; \
+	if [ ! -z ${PYTHONPATH+x} ]; then unset PYTHONPATH; fi ; \
+	if [ ! -z ${PYTHONHOME+x} ]; then unset PYTHONHOME; fi ; \
+	source "$(CONDA_ACTIVATE)" && \
+	conda-build -c dranew "bcl2fastq-2.17.1" && \
+	conda create -y -c local -n "bcl2fastq-2.17.1" bcl2fastq==2.17.1

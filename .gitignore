@@ -9,3 +9,6 @@ seq_dir
 output/
 *SampleSheet.csv*
 output*
+conda/conda
+*.zip
+*/test*/*

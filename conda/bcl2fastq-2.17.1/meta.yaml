@@ -1,0 +1,24 @@
+# https://bitbucket.org/dranew/conda_recipes/raw/8f92377a942e81367722805bc2b5334476de7b6d/bcl2fastq/meta.yaml
+package:
+  name: bcl2fastq
+  version: 2.17.1
+build:
+  number: 1
+requirements:
+  build:
+    - cmake
+    - gcc
+    - zlib
+    - boost_lib ==1.54.0
+    - xorg-libpthread-stubs
+  run:
+    - libgcc
+    - zlib
+    - boost_lib ==1.54.0
+test:
+  commands:
+    - 'bcl2fastq -h'
+about:
+  home: https://support.illumina.com/sequencing/sequencing_software/bcl2fastq-conversion-software.html
+  summary: 'bcl2fastq Conversion Software both demultiplexes data and converts BCL files generated
+    by Illumina sequencing systems to standard FASTQ file formats for downstream analysis.'
