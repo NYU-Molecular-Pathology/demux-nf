@@ -9,3 +9,5 @@ seq_dir
 output/
 *SampleSheet.csv*
 output*
+.Rproj.user/
+*.Rproj
