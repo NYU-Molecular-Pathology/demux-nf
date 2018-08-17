@@ -89,7 +89,12 @@ undetermined_summary <- lane_summary_df[lane_summary_df[["Sample"]] == "Undeterm
 lane_sample_summary <- lane_summary_df[lane_summary_df[["Sample"]] != "Undetermined", ]
 
 # plot
-lane_reads_plot <- ggplot(lane_summary_df, aes(x = Sample, y = PF_Clusters/1000000)) +   geom_bar(aes(fill = Lane), position = "dodge", stat="identity") + ylab("Millions of Reads") + xlab("Sample") + ggtitle("Barcode Matched Read Count per Sample per Lane") + coord_flip()
+lane_reads_plot <- ggplot(lane_summary_df, aes(x = Sample, y = PF_Clusters/1000000)) + 
+    geom_bar(aes(fill = Lane), position = "dodge", stat="identity") + 
+    ylab("Millions of Reads") + 
+    xlab("Sample") + 
+    ggtitle("Barcode Matched Read Count per Sample per Lane") + 
+    coord_flip()
 
 sample_reads_plot <- ggplot(read_sum_df, aes(x = Sample, y = PF_Clusters/1000000)) + 
     geom_bar(position = "dodge", stat="identity") + 
@@ -108,7 +113,12 @@ pcnt_undetermined_plot <- ggplot(undetermined_summary, aes(x = Lane, y = pcnt_of
     scale_y_continuous(limits = c(0, 100), breaks = seq(0, 100, 10)) +
     geom_hline(yintercept = undetermined_max_pcnt, color = "red")
 
-pcnt_sample_plot <- ggplot(lane_sample_summary, aes(x = Sample, y = pcnt_of_thelane)) + geom_bar(aes(fill = Lane), position = "dodge", stat="identity") + ggtitle("Percent Sample Reads per Lane") + ylab("Percent of Lane") + xlab("Lane")  + coord_flip() # + scale_y_continuous(limits = c(0, 100), breaks = seq(0, 100, 10)) # + ylim(0, 100)
+pcnt_sample_plot <- ggplot(lane_sample_summary, aes(x = Sample, y = pcnt_of_thelane)) + 
+    geom_bar(aes(fill = Lane), position = "dodge", stat="identity") + 
+    ggtitle("Percent Sample Reads per Lane") + 
+    ylab("Percent of Lane") + 
+    xlab("Lane")  + 
+    coord_flip() # + scale_y_continuous(limits = c(0, 100), breaks = seq(0, 100, 10)) # + ylim(0, 100)
 
 lane_quality_score_plot <- ggplot(lane_summary_df, aes(x = Sample, y = Mean_QualityScore)) + 
     geom_bar(aes(fill = Lane), position = "dodge", stat="identity") + 
@@ -118,7 +128,12 @@ lane_quality_score_plot <- ggplot(lane_summary_df, aes(x = Sample, y = Mean_Qual
     coord_flip() + 
     geom_hline(yintercept = quality_score_min, color = "red")
 
-pcnt_perfect_barcode_plot <- ggplot(lane_sample_summary, aes(x = Sample, y = pcnt_Perfectbarcode)) +   geom_bar(aes(fill = Lane), position = "dodge", stat="identity") + ylab("Percent Perfect Barcode") + xlab("Sample") + ggtitle("Percent of Reads with Perfect Barcodes per Sample per Lane") + coord_flip()
+pcnt_perfect_barcode_plot <- ggplot(lane_sample_summary, aes(x = Sample, y = pcnt_Perfectbarcode)) + 
+    geom_bar(aes(fill = Lane), position = "dodge", stat="identity") + 
+    ylab("Percent Perfect Barcode") + 
+    xlab("Sample") + 
+    ggtitle("Percent of Reads with Perfect Barcodes per Sample per Lane") + 
+    coord_flip()
 ```
 
 ```{r unknown_barcodes}
@@ -327,8 +342,8 @@ print(pcnt_undetermined_plot)
 ```{r, fig.height=12, fig.width=8}
 print(lane_reads_plot)
 print(pcnt_sample_plot)
-print(lane_quality_score_plot)
 print(pcnt_perfect_barcode_plot)
+print(lane_quality_score_plot)
 ```
 
 - Each sample & lane must have a mean quality score of at least `r quality_score_min` to qualify for NGS580 panel analysis.
