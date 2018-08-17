@@ -222,11 +222,13 @@ process multiqc {
     output:
     file "${output_HTML}" into multiqc_report_html
     file "multiqc_data"
+    file "multiqc_plots"
 
     script:
     output_HTML="${params.runID}-multiqc_report.html"
+    output_pdf="${params.runID}-multiqc_report.pdf"
     """
-    multiqc .
+    multiqc . --export
     mv multiqc_report.html "${output_HTML}"
     """
 }

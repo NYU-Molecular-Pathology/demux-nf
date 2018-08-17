@@ -11,3 +11,7 @@ output/
 output*
 .Rproj.user/
 *.Rproj
+trace.txt.*
+.nextflow.log.*
+nextflow-report.html.*
+timeline-report.html.*
