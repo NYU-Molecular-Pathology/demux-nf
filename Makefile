@@ -49,18 +49,15 @@ update-submodules: remote
 run-NGS580: install
 	if [ "$$( module > /dev/null 2>&1; echo $$?)" -eq 0 ]; then module unload java && module load java/1.8 ; fi ; \
 	if [ -n "$(RUNID)" ]; then \
-	./nextflow run main.nf -resume -with-notification -with-timeline -with-trace -with-report -profile phoenix,NGS580 --runID $(RUNID) $(EP) && \
-	./nextflow run email.nf $(EP) ; \
+	./nextflow run main.nf -resume -with-notification -with-timeline -with-trace -with-report -profile phoenix,NGS580 --runID $(RUNID) $(EP) ; \
 	elif [ -z "$(RUNID)" ]; then \
-	./nextflow run main.nf -resume -with-notification -with-timeline -with-trace -with-report -profile phoenix,NGS580 $(EP) && \
-	./nextflow run email.nf $(EP) ; \
+	./nextflow run main.nf -resume -with-notification -with-timeline -with-trace -with-report -profile phoenix,NGS580 $(EP) ; \
 	fi
-
+# ./nextflow run email.nf $(EP)
 
 run-Archer: install
 	if [ "$$( module > /dev/null 2>&1; echo $$?)" -eq 0 ]; then module unload java && module load java/1.8 ; fi ; \
-	./nextflow run main.nf -resume -with-notification -with-timeline -with-trace -with-report -profile phoenix,Archer --runID "$(RUNID)" $(EP) && \
-	./nextflow run email.nf $(EP)
+	./nextflow run main.nf -resume -with-notification -with-timeline -with-trace -with-report -profile phoenix,Archer --runID "$(RUNID)" $(EP) 
 
 
 # submit the parent Nextflow process to phoenix HPC as a qsub job

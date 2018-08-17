@@ -314,9 +314,18 @@ workflow.onComplete {
         .stripIndent()
         // Total CPU-Hours   : ${workflow.stats.getComputeTimeString() ?: '-'}
     // save hard-copies of the custom email since it keeps breaking inside this pipeline
-    def subject = "[${params.workflow_label}] ${status}: ${params.runID}"
+    def subject_line = "[${params.workflow_label}] ${status}: ${params.runID}"
     def email_subject = new File("${params.output_dir}/email/subject.txt")
-    email_subject.write "${subject}"
+    email_subject.write "${subject_line}"
     def email_body = new File("${params.output_dir}/email/body.txt")
     email_body.write "${msg}".stripIndent()
+
+    sendMail {
+      from "${params.email_to}"
+      to "${params.email_from}"
+      subject subject_line
+      """
+      ${msg}
+      """.stripIndent()
+    }
 }
