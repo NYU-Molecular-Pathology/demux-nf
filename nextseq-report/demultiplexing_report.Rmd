@@ -9,6 +9,11 @@ output:
     number_sections: true
     toc: true
     toc_depth: 3
+  pdf_document:
+    keep_tex: yes
+    number_sections: yes
+    toc: yes
+    toc_depth: 3
 editor_options: 
   chunk_output_type: console
 ---

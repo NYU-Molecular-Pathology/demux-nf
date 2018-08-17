@@ -245,15 +245,29 @@ process demultiplexing_report {
 
     output:
     file("${report_HTML}") into demultiplexing_report_html
+    // file("${report_PDF}")
 
     script:
     report_RMD="${params.runID}-demultiplexing_report.Rmd"
     report_HTML="${params.runID}-demultiplexing_report.html"
+    report_PDF="${params.runID}-demultiplexing_report.pdf"
     """
+    # put the Demultiplex_Stats.htm file inside the report's dir
     mv ${demultiplex_stats} "${template_dir}/"
-    cp "${template_dir}/demultiplexing_report.Rmd" "${template_dir}/${report_RMD}"
-    compile_Rmd.R "${template_dir}/${report_RMD}"
+
+    # rename the report template file to match the desired output filename
+    # cp "${template_dir}/demultiplexing_report.Rmd" "${template_dir}/${report_RMD}"
+
+    # compile to HTML
+    Rscript -e 'rmarkdown::render(input = "${template_dir}/demultiplexing_report.Rmd", output_format = "html_document", output_file = "${report_HTML}")'
+
+    # compile to PDF
+    # Rscript -e 'rmarkdown::render(input = "${template_dir}/demultiplexing_report.Rmd", output_format = "pdf_document", output_file = "${report_PDF}")'
+    # ! LaTeX Error: File `ifluatex.sty' not found.
+
+    # move the output files to the current directory
     mv "${template_dir}/${report_HTML}" .
+    # mv "${template_dir}/${report_PDF}" .
     """
 }
 
