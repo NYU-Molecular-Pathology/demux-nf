@@ -37,9 +37,20 @@ deploy: check-seqdir check-proddir
 	( cd  "$${production_dir}" && ln -s "$${project_dir}" seq_dir ) && \
 	echo ">>> Demultiplexing directory prepared: $${production_dir}"
 
+# ~~~~~ UPDATE THIS REPO ~~~~~ #
+update: pull update-submodules update-nextflow
+
+pull: remote
+	git pull
+
 # update the repo remote for ssh
+ORIGIN:=git@github.com:NYU-Molecular-Pathology/demux-nf.git
 remote:
-	git remote set-url origin git@github.com:NYU-Molecular-Pathology/demux-nf.git
+	git remote set-url origin $(ORIGIN)
+
+update-nextflow:
+	[ -f nextflow ] && rm -f nextflow && \
+	$(MAKE) install
 
 # pull the latest version of all submodules
 update-submodules: remote
