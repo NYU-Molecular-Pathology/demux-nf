@@ -4,9 +4,24 @@ params.runID = null // "180131_NB501073_0032_AHT5F3BGX3"
 params.runDir = null
 params.samplesheet = null
 
+def default_runID_file = "runID.txt"
+def default_runID_obj = new File("${default_runID_file}")
+def default_runID
+def runID
 // check if Run ID was passed on CLI
+// 0. use CLI passed arg
+// 1. look for 'runID.txt' in current dir, get runID from that
 if(params.runID == null){
-    log.warn "runID ID is not set, use '--runID runID'"
+    // log.warn "runID ID is not set, use '--runID runID'"
+    log.warn "runID not passed, checking for default..."
+    if(default_runID_obj.exists()){
+        runID = default_runID_obj.readLines()[0]
+    } else {
+        log.error("No default runID found")
+        exit 1
+    }
+} else {
+    runID = params.runID
 }
 
 // check if a sequencing run directory was passed
@@ -17,7 +32,7 @@ if(params.runID == null){
 def default_runDir = "seq_dir"
 def default_runDir_obj = new File("${default_runDir}")
 def default_runDir_path
-def system_runDir_path = "${params.sequencer_dir}/${params.runID}"
+def system_runDir_path = "${params.sequencer_dir}/${runID}"
 def system_runDir_obj = new File("${system_runDir_path}")
 def runDir
 if( params.runDir == null ){
@@ -80,7 +95,7 @@ if(params.samplesheet == null){
 
 // ~~~~~ START WORKFLOW ~~~~~ //
 log.info "~~~~~~~ Demultiplexing Pipeline ~~~~~~~"
-log.info "* Run ID:          ${params.runID}"
+log.info "* Run ID:          ${runID}"
 log.info "* Sequencer dir:   ${params.sequencer_dir}"
 log.info "* Run dir:         ${runDir}"
 log.info "* Output dir:      ${params.outputDir} "
@@ -142,11 +157,11 @@ process copy_samplesheet {
 
     output:
     file("SampleSheet.csv") into (samplesheet_copy, samplesheet_copy2)
-    file("${params.runID}-SampleSheet.csv")
+    file("${runID}-SampleSheet.csv")
     val('') into done_copy_samplesheet
 
     script:
-    output_samplesheet = "${params.runID}-SampleSheet.csv"
+    output_samplesheet = "${runID}-SampleSheet.csv"
     """
     cp "input_sheet.csv" SampleSheet.csv
     cp "input_sheet.csv" "${output_samplesheet}"
@@ -278,8 +293,8 @@ process multiqc {
     file "multiqc_plots"
 
     script:
-    output_HTML="${params.runID}-multiqc_report.html"
-    output_pdf="${params.runID}-multiqc_report.pdf"
+    output_HTML="${runID}-multiqc_report.html"
+    output_pdf="${runID}-multiqc_report.pdf"
     """
     multiqc . --export
     mv multiqc_report.html "${output_HTML}"
@@ -301,9 +316,9 @@ process demultiplexing_report {
     // file("${report_PDF}")
 
     script:
-    report_RMD="${params.runID}-demultiplexing_report.Rmd"
-    report_HTML="${params.runID}-demultiplexing_report.html"
-    report_PDF="${params.runID}-demultiplexing_report.pdf"
+    report_RMD="${runID}-demultiplexing_report.Rmd"
+    report_HTML="${runID}-demultiplexing_report.html"
+    report_PDF="${runID}-demultiplexing_report.pdf"
     """
     # put the Demultiplex_Stats.htm file inside the report's dir
     mv ${demultiplex_stats} "${template_dir}/"
@@ -383,7 +398,7 @@ workflow.onComplete {
         .stripIndent()
         // Total CPU-Hours   : ${workflow.stats.getComputeTimeString() ?: '-'}
     // save hard-copies of the custom email since it keeps breaking inside this pipeline
-    def subject_line = "[${params.workflow_label}] ${status}: ${params.runID}"
+    def subject_line = "[${params.workflow_label}] ${status}: ${runID}"
     def email_subject = new File("${params.outputDir}/email/subject.txt")
     email_subject.write "${subject_line}"
     def email_body = new File("${params.outputDir}/email/body.txt")

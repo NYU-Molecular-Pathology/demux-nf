@@ -15,3 +15,5 @@ trace.txt.*
 .nextflow.log.*
 nextflow-report.html.*
 timeline-report.html.*
+runID.txt
+*.csv
