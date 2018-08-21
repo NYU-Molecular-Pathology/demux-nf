@@ -37,6 +37,8 @@ check-proddir:
 	@if [ ! -d "$(PRODDIR)" ]; then printf ">>> ERROR: PRODDIR does not exist: $(PRODDIR)\n"; exit 1; fi
 
 # set up a new sequencing directory with a copy of this repo for demultiplexing
+SEQ_DIR:=seq_dir
+RUN_ID_FILE:=runID.txt
 deploy: check-seqdir check-proddir
 	@[ -z "$(RUNID)" ] && printf ">>> invalid RUNID specified: $(RUNID)\n" && exit 1 || :
 	@[ ! -d "$(SEQDIR)/$(RUNID)" ] && printf ">>> Project directory does not exist: $(SEQDIR)/$(RUNID)\n" && exit 1 || :
@@ -45,9 +47,11 @@ deploy: check-seqdir check-proddir
 	production_dir="$(PRODDIR)/$(RUNID)" && \
 	repo_dir="$${PWD}" && \
 	output_dir="$${production_dir}/$$(basename $${repo_dir})" && \
+	run_id_file="$${output_dir}/$(RUN_ID_FILE)" && \
 	echo ">>> Setting up for demultiplexing of $(RUNID) in directory: $${production_dir}" && \
 	git clone --recursive "$${repo_dir}" "$${production_dir}" && \
-	( cd  "$${production_dir}" && ln -s "$${project_dir}" seq_dir ) && \
+	( cd  "$${production_dir}" && ln -s "$${project_dir}" "$(SEQ_DIR)" ) && \
+	echo "$(RUNID)" > "$${run_id_file}" && \
 	echo ">>> Demultiplexing directory prepared: $${production_dir}"
 
 # ~~~~~ UPDATE THIS REPO ~~~~~ #
