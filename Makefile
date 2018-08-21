@@ -37,13 +37,21 @@ check-proddir:
 	@if [ ! -d "$(PRODDIR)" ]; then printf ">>> ERROR: PRODDIR does not exist: $(PRODDIR)\n"; exit 1; fi
 
 # set up a new sequencing directory with a copy of this repo for demultiplexing
+# - check that valid args were passed
+# - check that sequecing dir exists 
+# - git clone a copy of this repo to the output production location
+# - symlink the source sequecing directory to the output location
+# - write the run ID to a text file in the output directory
+# - copy over a supplied samplesheet to the output directory
+# - if the samplesheet isn't already named SampleSheet.csv, create a symlink to it with that name
 SEQ_DIR:=seq_dir
 RUN_ID_FILE:=runID.txt
+SAMPLESHEET:=
 deploy: check-seqdir check-proddir
 	@[ -z "$(RUNID)" ] && printf ">>> invalid RUNID specified: $(RUNID)\n" && exit 1 || :
 	@[ ! -d "$(SEQDIR)/$(RUNID)" ] && printf ">>> Project directory does not exist: $(SEQDIR)/$(RUNID)\n" && exit 1 || :
 	@[ ! -d "$(SEQDIR)/$(RUNID)/Data/Intensities/BaseCalls" ] && printf ">>> Basecalls directory does not exist for run: $(SEQDIR)/$(RUNID)\n" && exit 1 || :
-	@project_dir="$(SEQDIR)/$(RUNID)" && \
+	project_dir="$(SEQDIR)/$(RUNID)" && \
 	production_dir="$(PRODDIR)/$(RUNID)" && \
 	repo_dir="$${PWD}" && \
 	run_id_file="$${production_dir}/$(RUN_ID_FILE)" && \
@@ -51,6 +59,13 @@ deploy: check-seqdir check-proddir
 	git clone --recursive "$${repo_dir}" "$${production_dir}" && \
 	( cd  "$${production_dir}" && ln -s "$${project_dir}" "$(SEQ_DIR)" ) && \
 	echo "$(RUNID)" > "$${run_id_file}" && \
+	if [ -n "$(SAMPLESHEET)" ]; then \
+	echo ">>> Copying over samplesheet..." && \
+	cp "$(SAMPLESHEET)" "$${production_dir}/" ; \
+	if [ "$$(basename "$(SAMPLESHEET)")" != SampleSheet.csv ]; then \
+	( cd "$${production_dir}" && ln -s "$$(basename $(SAMPLESHEET))" SampleSheet.csv ) ; \
+	fi ; \
+	fi && \
 	echo ">>> Demultiplexing directory prepared: $${production_dir}"
 # output_dir="$${production_dir}/$$(basename $${repo_dir})" && \
 
