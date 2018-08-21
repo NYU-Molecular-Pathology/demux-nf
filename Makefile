@@ -46,13 +46,13 @@ deploy: check-seqdir check-proddir
 	@project_dir="$(SEQDIR)/$(RUNID)" && \
 	production_dir="$(PRODDIR)/$(RUNID)" && \
 	repo_dir="$${PWD}" && \
-	output_dir="$${production_dir}/$$(basename $${repo_dir})" && \
-	run_id_file="$${output_dir}/$(RUN_ID_FILE)" && \
+	run_id_file="$${production_dir}/$(RUN_ID_FILE)" && \
 	echo ">>> Setting up for demultiplexing of $(RUNID) in directory: $${production_dir}" && \
 	git clone --recursive "$${repo_dir}" "$${production_dir}" && \
 	( cd  "$${production_dir}" && ln -s "$${project_dir}" "$(SEQ_DIR)" ) && \
 	echo "$(RUNID)" > "$${run_id_file}" && \
 	echo ">>> Demultiplexing directory prepared: $${production_dir}"
+# output_dir="$${production_dir}/$$(basename $${repo_dir})" && \
 
 # ~~~~~ UPDATE THIS REPO ~~~~~ #
 update: pull update-submodules update-nextflow
