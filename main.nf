@@ -116,29 +116,29 @@ process validate_run_completion {
 }
 
 process validate_samplesheet {
-    tag "${samplesheet}"
+    tag "${samplesheetFile}"
     executor "local"
 
     input:
-    file(samplesheet) from samplesheet_input
+    file(samplesheetFile) from samplesheet_input
 
     output:
-    file("${samplesheet}") into validated_samplesheet
+    file("${samplesheetFile}") into validated_samplesheet
     val('') into done_validate_samplesheet
 
     script:
     """
-    validate-samplesheet.py "${samplesheet}"
+    validate-samplesheet.py "${samplesheetFile}"
     """
 }
 
 process copy_samplesheet {
-    tag "${samplesheet}"
+    tag "${samplesheetFile}"
     executor "local"
     publishDir "${params.outputDir}/", mode: 'copy', overwrite: true
 
     input:
-    file(samplesheet) name "input_sheet.csv" from validated_samplesheet
+    file(samplesheetFile) name "input_sheet.csv" from validated_samplesheet
 
     output:
     file("SampleSheet.csv") into (samplesheet_copy, samplesheet_copy2)
@@ -178,7 +178,7 @@ process bcl2fastq {
     publishDir "${params.outputDir}/", mode: 'copy', overwrite: true
 
     input:
-    set file(samplesheet), val(runDir_path) from samplesheet_copy.combine(runDir_ch2)
+    set file(samplesheetFile), val(runDir_path) from samplesheet_copy.combine(runDir_ch2)
 
     output:
     file("Unaligned") into bcl2fastq_output
@@ -206,7 +206,7 @@ process bcl2fastq {
     --demultiplexing-threads \${demult_threads:-2} \
     --processing-threads \${nthreads:-2} \
     --writing-threads 2 \
-    --sample-sheet ${samplesheet} \
+    --sample-sheet ${samplesheetFile} \
     --runfolder-dir ${runDir_path} \
     --output-dir ./Unaligned \
     ${params.bcl2fastq_params}

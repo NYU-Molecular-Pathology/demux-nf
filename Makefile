@@ -21,7 +21,8 @@ remove-framework:
 	mv "$(NXF_FRAMEWORK_DIR)" "$${new_framework}" ; \
 	fi
 
-./nextflow: remove-framework
+./nextflow: 
+	@[ -d "$(NXF_FRAMEWORK_DIR)" ] && $(MAKE) remove-framework || :
 	@if [ "$$( module > /dev/null 2>&1; echo $$?)" -eq 0 ]; then module unload java && module load java/1.8 ; fi ; \
 	export NXF_VER="$(NXF_VER)" && \
 	printf ">>> Installing Nextflow in the local directory\n" && \
