@@ -6,13 +6,25 @@ PRODDIR:=/ifs/data/molecpathlab/production/Demultiplexing
 NXF_VER:=0.29.0
 EP:=
 
+# no default action to take
 none:
 
 # ~~~~~ SETUP PIPELINE ~~~~~ #
-./nextflow:
-	if [ "$$( module > /dev/null 2>&1; echo $$?)" -eq 0 ]; then module unload java && module load java/1.8 ; fi ; \
+USER_HOME=$(shell echo "$$HOME")
+USER_DATE:=$(shell date +%s)
+NXF_FRAMEWORK_DIR:=$(USER_HOME).nextflow/framework/$(NXF_VER)
+# gets stuck on NFS drive and prevents install command from finishing
+remove-framework:
+	@if [ -d "$(NXF_FRAMEWORK_DIR)" ]; then \
+	new_framework="$(NXF_FRAMEWORK_DIR).$(USER_DATE)" ; \
+	echo ">>> Moving old Nextflow framework dir $(NXF_FRAMEWORK_DIR) to $${new_framework}" ; \
+	mv "$(NXF_FRAMEWORK_DIR)" "$${new_framework}" ; \
+	fi
+
+./nextflow: remove-framework
+	@if [ "$$( module > /dev/null 2>&1; echo $$?)" -eq 0 ]; then module unload java && module load java/1.8 ; fi ; \
 	export NXF_VER="$(NXF_VER)" && \
-	printf ">>> Intalling Nextflow in the local directory" && \
+	printf ">>> Installing Nextflow in the local directory\n" && \
 	curl -fsSL get.nextflow.io | bash
 
 install: ./nextflow
