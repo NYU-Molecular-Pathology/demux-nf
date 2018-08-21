@@ -1,51 +1,104 @@
-// check some params from configs
+// ~~~~~ CHECK CONFIGS ~~~~~ //
+params.outputDir = new File("output").getCanonicalPath()
+params.runID = null // "180131_NB501073_0032_AHT5F3BGX3"
+params.runDir = null
+params.samplesheet = null
+
+// check if Run ID was passed on CLI
 if(params.runID == null){
     log.warn "runID ID is not set, use '--runID runID'"
 }
 
-def run_dir
-if(params.run_dir == null){
-    run_dir = "${params.sequencer_dir}/${params.runID}"
-    log.warn "Run dir not provided, attempting to use default location: ${run_dir}"
+// check if a sequencing run directory was passed
+// otherwise:
+// 0. use CLI passed dir
+// 1. look for 'seq_dir' symlink in current directory
+// 2. try to locate the directory based on the runID + default location
+def default_runDir = "seq_dir"
+def default_runDir_obj = new File("${default_runDir}")
+def default_runDir_path
+def system_runDir_path = "${params.sequencer_dir}/${params.runID}"
+def system_runDir_obj = new File("${system_runDir_path}")
+def runDir
+if( params.runDir == null ){
+    log.info("Run dir not passed, checking default locations...")
+
+    // check if 'seq_dir' exists in local dir & is valid symlink
+    if( default_runDir_obj.exists() ){
+        log.info("seq_dir exists in current directory, using it as run dir")
+        // resolve symlink
+        default_runDir_path = default_runDir_obj.getCanonicalPath()
+        runDir = default_runDir_path
+    } else {
+        if( system_runDir_obj.exists() ){
+            log.info("System run dir found, using it as run dir")
+            // use found path
+            runDir = system_runDir_path
+        }
+    }
 } else {
-    run_dir = "${params.run_dir}"
+    runDir = "${params.runDir}"
 }
-run_dir = new File(run_dir).getCanonicalPath()
 
-def run_dir_obj = new File("${run_dir}")
-if( !run_dir_obj.exists() ){
-    log.error "Run dir does not exist: ${run_dir}"
+// make sure the run dir really does exist
+runDir = new File(runDir).getCanonicalPath()
+def runDir_obj = new File("${runDir}")
+if( !runDir_obj.exists() ){
+    log.error "Run dir does not exist: ${runDir}"
     exit 1
 }
-params.basecalls_dir = "${run_dir}/Data/Intensities/BaseCalls"
 
+// make sure the Basecalls dir exists inside the run dir
+def basecallsDir = "${runDir}/Data/Intensities/BaseCalls"
+def basecallsDir_obj = new File("${basecallsDir}")
+if( ! basecallsDir_obj.exists() ){
+    log.error("Basecalls dir does not exist: ${basecallsDir}")
+    exit 1
+}
+
+// Check for samplesheet;
+// 0. Use CLI passed samplesheet
+// 1. Check for SampleSheet.csv in current directory
+def default_samplesheet = "SampleSheet.csv"
+def default_samplesheet_obj = new File("${default_samplesheet}")
+def default_samplesheet_path
+def samplesheet
 if(params.samplesheet == null){
-    log.error "No samplesheet file provided; use '--samplesheet SampleSheet.csv'"
-    exit 1
+    log.warn("No samplesheet passed, attempting to use defaults...")
+    if( default_samplesheet_obj.exists() ){
+        log.warn("${default_samplesheet} exists in current directory, using it as samplesheet")
+        default_samplesheet_path = default_samplesheet_obj.getCanonicalPath()
+        samplesheet = default_samplesheet_path
+    } else {
+        log.error("No samplesheet found, please provide one with '--samplesheet'")
+        exit 1
+    }
+} else {
+    samplesheet = params.samplesheet
 }
 
+
+// ~~~~~ START WORKFLOW ~~~~~ //
 log.info "~~~~~~~ Demultiplexing Pipeline ~~~~~~~"
 log.info "* Run ID:          ${params.runID}"
 log.info "* Sequencer dir:   ${params.sequencer_dir}"
-log.info "* Run dir:         ${run_dir}"
-log.info "* Basecalls dir:   ${params.basecalls_dir}"
-log.info "* Output dir:      ${params.output_dir} "
-log.info "* Samplesheet:     ${params.samplesheet}"
+log.info "* Run dir:         ${runDir}"
+log.info "* Output dir:      ${params.outputDir} "
+log.info "* Samplesheet:     ${samplesheet}"
 log.info "* Launch dir:      ${workflow.launchDir}"
 log.info "* Work dir:        ${workflow.workDir}"
 
-
-Channel.fromPath( params.samplesheet ).set { samplesheet_input }
-Channel.from( "${run_dir}" ).into { run_dir_ch; run_dir_ch2 } // dont stage run dir for safety reasons, just pass the path
+Channel.fromPath( "${samplesheet}" ).set { samplesheet_input }
+Channel.from( "${runDir}" ).into { runDir_ch; runDir_ch2 } // dont stage run dir for safety reasons, just pass the path
 Channel.fromPath( params.report_template_dir ).set { report_template_dir }
 
 process validate_run_completion {
-    tag "${run_dir}"
+    tag "${runDir}"
     executor "local"
-    publishDir "${params.output_dir}/", mode: 'copy', overwrite: true
+    publishDir "${params.outputDir}/", mode: 'copy', overwrite: true
 
     input:
-    val(run_dir) from run_dir_ch
+    val(runDir) from runDir_ch
 
     output:
     file("RTAComplete.txt") into run_RTAComplete_txt
@@ -55,9 +108,9 @@ process validate_run_completion {
 
     script:
     """
-    cp ${run_dir}/RTAComplete.txt .
-    cp ${run_dir}/RunCompletionStatus.xml .
-    cp ${run_dir}/RunParameters.xml .
+    cp ${runDir}/RTAComplete.txt .
+    cp ${runDir}/RunCompletionStatus.xml .
+    cp ${runDir}/RunParameters.xml .
     """
 
 }
@@ -82,7 +135,7 @@ process validate_samplesheet {
 process copy_samplesheet {
     tag "${samplesheet}"
     executor "local"
-    publishDir "${params.output_dir}/", mode: 'copy', overwrite: true
+    publishDir "${params.outputDir}/", mode: 'copy', overwrite: true
 
     input:
     file(samplesheet) name "input_sheet.csv" from validated_samplesheet
@@ -104,7 +157,7 @@ process copy_samplesheet {
 
 process convert_run_params{
     tag "${run_params_xml_file}"
-    publishDir "${params.output_dir}/", mode: 'copy', overwrite: true
+    publishDir "${params.outputDir}/", mode: 'copy', overwrite: true
     executor "local"
 
     input:
@@ -121,11 +174,11 @@ process convert_run_params{
 }
 
 process bcl2fastq {
-    tag "${run_dir_path}"
-    publishDir "${params.output_dir}/", mode: 'copy', overwrite: true
+    tag "${runDir_path}"
+    publishDir "${params.outputDir}/", mode: 'copy', overwrite: true
 
     input:
-    set file(samplesheet), val(run_dir_path) from samplesheet_copy.combine(run_dir_ch2)
+    set file(samplesheet), val(runDir_path) from samplesheet_copy.combine(runDir_ch2)
 
     output:
     file("Unaligned") into bcl2fastq_output
@@ -154,7 +207,7 @@ process bcl2fastq {
     --processing-threads \${nthreads:-2} \
     --writing-threads 2 \
     --sample-sheet ${samplesheet} \
-    --runfolder-dir ${run_dir_path} \
+    --runfolder-dir ${runDir_path} \
     --output-dir ./Unaligned \
     ${params.bcl2fastq_params}
 
@@ -185,7 +238,7 @@ fastq_output.flatMap()
 
 process fastqc {
     tag "${fastq}"
-    publishDir "${params.output_dir}/fastqc", mode: 'copy', overwrite: true
+    publishDir "${params.outputDir}/fastqc", mode: 'copy', overwrite: true
 
     input:
     file(fastq) from fastq_filtered
@@ -213,7 +266,7 @@ done_validate_run_completion.concat(
     ).into { all_done1; all_done2; all_done3 }
 
 process multiqc {
-    publishDir "${params.output_dir}/reports", mode: 'copy', overwrite: true
+    publishDir "${params.outputDir}/reports", mode: 'copy', overwrite: true
     executor "local"
 
     input:
@@ -236,7 +289,7 @@ process multiqc {
 process demultiplexing_report {
     tag "${template_dir}"
     executor "local"
-    publishDir "${params.output_dir}/reports", mode: 'copy', overwrite: true
+    publishDir "${params.outputDir}/reports", mode: 'copy', overwrite: true
     stageInMode "copy"
 
     input:
@@ -274,7 +327,7 @@ process demultiplexing_report {
 
 process collect_email_attachments {
     tag "${attachments}"
-    publishDir "${params.output_dir}/email/attachments", mode: 'move', overwrite: true
+    publishDir "${params.outputDir}/email/attachments", mode: 'move', overwrite: true
     stageInMode "copy"
     executor "local"
 
@@ -309,7 +362,7 @@ workflow.onComplete {
         Launch directory  : ${workflow.launchDir}
         Work directory    : ${workflow.workDir.toUriString()}
         Nextflow directory : ${workflow.projectDir}
-        Run directory     : ${params.run_dir}
+        Run directory     : ${params.runDir}
         Script name       : ${workflow.scriptName ?: '-'}
         Script ID         : ${workflow.scriptId ?: '-'}
         Workflow session  : ${workflow.sessionId}
@@ -331,9 +384,9 @@ workflow.onComplete {
         // Total CPU-Hours   : ${workflow.stats.getComputeTimeString() ?: '-'}
     // save hard-copies of the custom email since it keeps breaking inside this pipeline
     def subject_line = "[${params.workflow_label}] ${status}: ${params.runID}"
-    def email_subject = new File("${params.output_dir}/email/subject.txt")
+    def email_subject = new File("${params.outputDir}/email/subject.txt")
     email_subject.write "${subject_line}"
-    def email_body = new File("${params.output_dir}/email/body.txt")
+    def email_body = new File("${params.outputDir}/email/body.txt")
     email_body.write "${msg}".stripIndent()
 
     sendMail {
