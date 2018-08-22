@@ -46,7 +46,7 @@ make run-NGS580
 
 
 ```
-make run-NGS580 RUNID=180316_NB501073_0036_AH3VFKBGX5 EP="--samplesheet SampleSheet.csv --run_dir /data/180316_NB501073_0036_AH3VFKBGX5"
+make run-NGS580 RUNID=170809_NB501073_0019_AH5FFYBGX3 EP="--samplesheet SampleSheet.csv --runDir /path/to/sequencer/data/170809_NB501073_0019_AH5FFYBGX3"
 ```
 
 ### Archer
@@ -84,9 +84,9 @@ nextflow run main.nf --runID 12345
 
 ```
 {
-    "runDir": "/ifs/data/molecpathlab/quicksilver/170616_NB501073_0014_AH2VVMBGX3",
+    "runDir": "/path/to/sequencer/data/170809_NB501073_0019_AH5FFYBGX3",
     "samplesheet": "SampleSheet.csv",
-    "runID": "170616_NB501073_0014_AH2VVMBGX3"
+    "runID": "170809_NB501073_0019_AH5FFYBGX3"
 }
 ```
 
@@ -99,6 +99,38 @@ nextflow run main.nf --runID 12345
   - `runDir` : default sequencing run source directory (can be a symlink)
   
   - `runID.txt`: a text file, the first line of which will be used as the run ID
+
+# Extras
+
+- re-initialize configurations (overwrites old `config.json`)
+
+```
+make config RUNDIR=/path/to/sequencer/data/170809_NB501073_0019_AH5FFYBGX3 SAMPLESHEET=SampleSheet.csv RUNID=170809_NB501073_0019_AH5FFYBGX3
+```
+
+- update an existing directory to the latest version of this repo
+
+```
+make update
+```
+
+- clean up workflow intermediary files to save space
+
+```
+make finalize
+```
+
+- clean up output from all old workflows (saves current workflow output)
+
+```
+make clean
+```
+
+- clean up the output from all workflows (including the most recent one)
+
+```
+make clean-all
+```
 
 # Software Requirements
 
