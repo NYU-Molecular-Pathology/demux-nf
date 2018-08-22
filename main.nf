@@ -5,31 +5,45 @@ params.runID = null // "180131_NB501073_0032_AHT5F3BGX3"
 params.runDir = null
 params.samplesheet = null
 
-def default_runID_file = "runID.txt"
-def default_runID_obj = new File("${default_runID_file}")
-def default_runID
-def runID
-// check if Run ID was passed on CLI
-// 0. use CLI passed arg
-// 1. look for 'runID.txt' in current dir, get runID from that
-if(params.runID == null){
-    // log.warn "runID ID is not set, use '--runID runID'"
-    log.warn "runID not passed, checking for default..."
-    if(default_runID_obj.exists()){
-        runID = default_runID_obj.readLines()[0]
-    } else {
-        log.error("No default runID found")
-        exit 1
-    }
-} else {
-    runID = params.runID
+// load the JSON config, if present
+import groovy.json.JsonSlurper
+def jsonSlurper = new JsonSlurper()
+def demuxConfig
+def demuxConfigFile_obj = new File("${params.configFile}")
+if ( demuxConfigFile_obj.exists() ) {
+    log.info("Loading configs from ${params.configFile}")
+    String demuxConfigJSON = demuxConfigFile_obj.text
+    demuxConfig = jsonSlurper.parseText(demuxConfigJSON)
 }
 
-// check if a sequencing run directory was passed
+// check for Run ID
+// 0. use CLI passed arg
+// 1. check for config.json values
+// 2. look for 'runID.txt' in current dir, get runID from that
+// 3. use the name of the current directory
+def default_runID_file = "runID.txt"
+def default_runID_obj = new File("${default_runID_file}")
+def current_dir = System.getProperty("user.dir")
+def current_dirname = new File("${current_dir}").getName()
+def runID
+if(params.runID == null){
+    if ( demuxConfig && demuxConfig.containsKey("runID") && demuxConfig.runID != null ) {
+        runID = "${demuxConfig.runID}"
+    } else if( default_runID_obj.exists() ) {
+        runID = default_runID_obj.readLines()[0]
+    } else {
+        runID = "${current_dirname}"
+    }
+} else {
+    runID = "${params.runID}"
+}
+
+// check for a sequencing run directory was passed
 // otherwise:
 // 0. use CLI passed dir
-// 1. look for 'runDir' symlink in current directory
-// 2. try to locate the directory based on the runID + default location
+// 1. check for config.json values
+// 2. look for 'runDir' symlink or dir in current directory
+// 3. try to locate the directory based on the runID + default location
 def default_runDir = "runDir"
 def default_runDir_obj = new File("${default_runDir}")
 def default_runDir_path
@@ -37,21 +51,15 @@ def system_runDir_path = "${params.sequencer_dir}/${runID}"
 def system_runDir_obj = new File("${system_runDir_path}")
 def runDir
 if( params.runDir == null ){
-    log.info("Run dir not passed, checking default locations...")
-
-    // check if 'runDir' exists in local dir & is valid symlink
-    if( default_runDir_obj.exists() ){
-        log.info("runDir exists in current directory, using it as run dir")
-        // resolve symlink
-        default_runDir_path = default_runDir_obj.getCanonicalPath()
-        runDir = default_runDir_path
-    } else {
-        if( system_runDir_obj.exists() ){
-            log.info("System run dir found, using it as run dir")
+    if ( demuxConfig && demuxConfig.containsKey("runDir") && demuxConfig.runDir != null  ) {
+        runDir = demuxConfig.runDir
+    } else if( default_runDir_obj.exists() ){
+        // check if 'runDir' exists in local dir & is valid symlink; resolve symlink
+        runDir = default_runDir_obj.getCanonicalPath()
+    } else if( system_runDir_obj.exists() ){
             // use found path
             runDir = system_runDir_path
         }
-    }
 } else {
     runDir = "${params.runDir}"
 }
@@ -74,17 +82,17 @@ if( ! basecallsDir_obj.exists() ){
 
 // Check for samplesheet;
 // 0. Use CLI passed samplesheet
-// 1. Check for SampleSheet.csv in current directory
+// 1. check for config.json values
+// 2. Check for SampleSheet.csv in current directory
 def default_samplesheet = "SampleSheet.csv"
 def default_samplesheet_obj = new File("${default_samplesheet}")
 def default_samplesheet_path
 def samplesheet
 if(params.samplesheet == null){
-    log.warn("No samplesheet passed, attempting to use defaults...")
-    if( default_samplesheet_obj.exists() ){
-        log.warn("${default_samplesheet} exists in current directory, using it as samplesheet")
-        default_samplesheet_path = default_samplesheet_obj.getCanonicalPath()
-        samplesheet = default_samplesheet_path
+    if ( demuxConfig && demuxConfig.containsKey("samplesheet") && demuxConfig.samplesheet != null ) {
+        samplesheet = demuxConfig.samplesheet
+    } else if( default_samplesheet_obj.exists() ){
+        samplesheet = default_samplesheet_obj.getCanonicalPath()
     } else {
         log.error("No samplesheet found, please provide one with '--samplesheet'")
         exit 1

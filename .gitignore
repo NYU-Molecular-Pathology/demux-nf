@@ -18,3 +18,4 @@ timeline-report.html.*
 runID.txt
 *.csv
 config.json
+runDir
