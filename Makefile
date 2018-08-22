@@ -12,23 +12,23 @@ SEQDIR:=/ifs/data/molecpathlab/quicksilver
 PRODDIR:=/ifs/data/molecpathlab/production/Demultiplexing
 USER_HOME=$(shell echo "$$HOME")
 USER_DATE:=$(shell date +%s)
-NXF_FRAMEWORK_DIR:=$(USER_HOME).nextflow/framework/$(NXF_VER)
+NXF_FRAMEWORK_DIR:=$(USER_HOME)/.nextflow/framework/$(NXF_VER)
 # gets stuck on NFS drive and prevents install command from finishing
 remove-framework:
-	@if [ -d "$(NXF_FRAMEWORK_DIR)" ]; then \
+	@if [ -e "$(NXF_FRAMEWORK_DIR)" ]; then \
 	new_framework="$(NXF_FRAMEWORK_DIR).$(USER_DATE)" ; \
 	echo ">>> Moving old Nextflow framework dir $(NXF_FRAMEWORK_DIR) to $${new_framework}" ; \
 	mv "$(NXF_FRAMEWORK_DIR)" "$${new_framework}" ; \
 	fi
 
-./nextflow:
-	@[ -d "$(NXF_FRAMEWORK_DIR)" ] && $(MAKE) remove-framework || :
+./nextflow: 
 	@if [ "$$( module > /dev/null 2>&1; echo $$?)" -eq 0 ]; then module unload java && module load java/1.8 ; fi ; \
 	export NXF_VER="$(NXF_VER)" && \
 	printf ">>> Installing Nextflow in the local directory\n" && \
 	curl -fsSL get.nextflow.io | bash
+# @[ -d "$(NXF_FRAMEWORK_DIR)" ] && $(MAKE) remove-framework || :
 
-install: ./nextflow
+install: remove-framework ./nextflow
 
 check-seqdir:
 	@if [ ! -d "$(SEQDIR)" ]; then printf ">>> ERROR: SEQDIR does not exist: $(SEQDIR)\n" ; exit 1; fi
