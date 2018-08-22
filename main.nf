@@ -1,4 +1,5 @@
 // ~~~~~ CHECK CONFIGS ~~~~~ //
+params.configFile = "config.json"
 params.outputDir = new File("output").getCanonicalPath()
 params.runID = null // "180131_NB501073_0032_AHT5F3BGX3"
 params.runDir = null

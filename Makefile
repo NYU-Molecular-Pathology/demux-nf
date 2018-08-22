@@ -1,8 +1,4 @@
 SHELL:=/bin/bash
-RUNID:=
-# "180131_NB501073_0032_AHT5F3BGX3"
-SEQDIR:=/ifs/data/molecpathlab/quicksilver
-PRODDIR:=/ifs/data/molecpathlab/production/Demultiplexing
 NXF_VER:=0.29.0
 EP:=
 
@@ -10,6 +6,10 @@ EP:=
 none:
 
 # ~~~~~ SETUP PIPELINE ~~~~~ #
+RUNID:=
+# e.g.: 180131_NB501073_0032_AHT5F3BGX3
+SEQDIR:=/ifs/data/molecpathlab/quicksilver
+PRODDIR:=/ifs/data/molecpathlab/production/Demultiplexing
 USER_HOME=$(shell echo "$$HOME")
 USER_DATE:=$(shell date +%s)
 NXF_FRAMEWORK_DIR:=$(USER_HOME).nextflow/framework/$(NXF_VER)
@@ -21,7 +21,7 @@ remove-framework:
 	mv "$(NXF_FRAMEWORK_DIR)" "$${new_framework}" ; \
 	fi
 
-./nextflow: 
+./nextflow:
 	@[ -d "$(NXF_FRAMEWORK_DIR)" ] && $(MAKE) remove-framework || :
 	@if [ "$$( module > /dev/null 2>&1; echo $$?)" -eq 0 ]; then module unload java && module load java/1.8 ; fi ; \
 	export NXF_VER="$(NXF_VER)" && \
@@ -38,7 +38,7 @@ check-proddir:
 
 # set up a new sequencing directory with a copy of this repo for demultiplexing
 # - check that valid args were passed
-# - check that sequecing dir exists 
+# - check that sequecing dir exists
 # - git clone a copy of this repo to the output production location
 # - symlink the source sequecing directory to the output location
 # - write the run ID to a text file in the output directory
@@ -66,8 +66,18 @@ deploy: check-seqdir check-proddir
 	( cd "$${production_dir}" && ln -s "$$(basename $(SAMPLESHEET))" SampleSheet.csv ) ; \
 	fi ; \
 	fi && \
+	echo ">>> Creating config file..." && \
+	$(MAKE) config CONFIG_OUTPUT="$${production_dir}/config.json" SAMPLESHEET="$$(basename "$(SAMPLESHEET)")" SEQ_DIR="$${project_dir}" && \
 	echo ">>> Demultiplexing directory prepared: $${production_dir}"
 # output_dir="$${production_dir}/$$(basename $${repo_dir})" && \
+
+CONFIG_INPUT:=.config.json
+CONFIG_OUTPUT:=config.json
+config:
+	cp "$(CONFIG_INPUT)" "$(CONFIG_OUTPUT)"
+	[ -n "$(RUNID)" ] && python config.py --update "$(CONFIG_OUTPUT)" --runID "$(RUNID)" || :
+	[ -n "$(SAMPLESHEET)" ] && python config.py --update "$(CONFIG_OUTPUT)" --samplesheet "$(SAMPLESHEET)" || :
+	[ -n "$(SEQ_DIR)" ] && python config.py --update "$(CONFIG_OUTPUT)" --runDir "$(SEQ_DIR)" || :
 
 # ~~~~~ UPDATE THIS REPO ~~~~~ #
 update: pull update-submodules update-nextflow
@@ -100,7 +110,7 @@ run-NGS580: install
 
 run-Archer: install
 	@if [ "$$( module > /dev/null 2>&1; echo $$?)" -eq 0 ]; then module unload java && module load java/1.8 ; fi ; \
-	./nextflow run main.nf -resume -with-notification -with-timeline -with-trace -with-report -profile phoenix,Archer --runID "$(RUNID)" $(EP) 
+	./nextflow run main.nf -resume -with-notification -with-timeline -with-trace -with-report -profile phoenix,Archer --runID "$(RUNID)" $(EP)
 
 
 # submit the parent Nextflow process to phoenix HPC as a qsub job
@@ -134,10 +144,10 @@ TRACEFILE:=trace.txt
 # resolve publishDir output symlinks
 # write work 'ls' files
 # create work dir file stubs
-finalize: 
-	$(MAKE) finalize-work-rm 
-	$(MAKE) finalize-output 
-	$(MAKE) finalize-work-ls 
+finalize:
+	$(MAKE) finalize-work-rm
+	$(MAKE) finalize-output
+	$(MAKE) finalize-work-ls
 	$(MAKE) finalize-work-stubs
 
 ## ~~~ convert all symlinks to their linked items ~~~ ##
