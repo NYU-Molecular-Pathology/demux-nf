@@ -1,5 +1,6 @@
 # demux-nf
-Nextflow pipeline for demultiplexing.
+
+Nextflow pipeline for demultiplexing Illumina Next-Gen sequencing data.
 
 # Usage
 
