@@ -28,9 +28,9 @@ if(params.runID == null){
 // check if a sequencing run directory was passed
 // otherwise:
 // 0. use CLI passed dir
-// 1. look for 'seq_dir' symlink in current directory
+// 1. look for 'runDir' symlink in current directory
 // 2. try to locate the directory based on the runID + default location
-def default_runDir = "seq_dir"
+def default_runDir = "runDir"
 def default_runDir_obj = new File("${default_runDir}")
 def default_runDir_path
 def system_runDir_path = "${params.sequencer_dir}/${runID}"
@@ -39,9 +39,9 @@ def runDir
 if( params.runDir == null ){
     log.info("Run dir not passed, checking default locations...")
 
-    // check if 'seq_dir' exists in local dir & is valid symlink
+    // check if 'runDir' exists in local dir & is valid symlink
     if( default_runDir_obj.exists() ){
-        log.info("seq_dir exists in current directory, using it as run dir")
+        log.info("runDir exists in current directory, using it as run dir")
         // resolve symlink
         default_runDir_path = default_runDir_obj.getCanonicalPath()
         runDir = default_runDir_path
