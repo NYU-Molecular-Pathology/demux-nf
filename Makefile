@@ -22,13 +22,13 @@ remove-framework:
 	fi
 
 ./nextflow: 
+	@[ -d "$(NXF_FRAMEWORK_DIR)" ] && $(MAKE) remove-framework || :
 	@if [ "$$( module > /dev/null 2>&1; echo $$?)" -eq 0 ]; then module unload java && module load java/1.8 ; fi ; \
 	export NXF_VER="$(NXF_VER)" && \
 	printf ">>> Installing Nextflow in the local directory\n" && \
 	curl -fsSL get.nextflow.io | bash
-# @[ -d "$(NXF_FRAMEWORK_DIR)" ] && $(MAKE) remove-framework || :
 
-install: remove-framework ./nextflow
+install: ./nextflow
 
 check-seqdir:
 	@if [ ! -d "$(SEQDIR)" ]; then printf ">>> ERROR: SEQDIR does not exist: $(SEQDIR)\n" ; exit 1; fi
@@ -83,20 +83,27 @@ config:
 update: pull update-submodules update-nextflow
 
 pull: remote
-	git pull
+	@echo ">>> Updating repo"
+	@git pull
 
 # update the repo remote for ssh
 ORIGIN:=git@github.com:NYU-Molecular-Pathology/demux-nf.git
 remote:
-	git remote set-url origin $(ORIGIN)
+	@echo ">>> Setting git remote origin to $(ORIGIN)"
+	@git remote set-url origin $(ORIGIN)
 
 update-nextflow:
-	[ -f nextflow ] && rm -f nextflow && \
-	$(MAKE) install
+	@if [ -f nextflow ]; then \
+	echo ">>> Removing old Nextflow" && \
+	rm -f nextflow && \
+	echo ">>> Reinstalling Nextflow" && \
+	$(MAKE) install ; \
+	else $(MAKE) install ; fi
 
 # pull the latest version of all submodules
 update-submodules: remote
-	git submodule update --recursive --remote --init
+	@echo ">>> Updating git submodules"
+	@git submodule update --recursive --remote --init
 
 # ~~~~~ RUN PIPELINE ~~~~~ #
 run-NGS580: install
