@@ -379,27 +379,31 @@ workflow.onComplete {
     def msg = """
         Pipeline execution summary
         ---------------------------
-        Success           : ${workflow.success}
-        exit status       : ${workflow.exitStatus}
-        Launch time       : ${workflow.start.format('dd-MMM-yyyy HH:mm:ss')}
-        Ending time       : ${workflow.complete.format('dd-MMM-yyyy HH:mm:ss')} (duration: ${workflow.duration})
-        Launch directory  : ${workflow.launchDir}
-        Work directory    : ${workflow.workDir.toUriString()}
-        Nextflow directory : ${workflow.projectDir}
-        Run directory     : ${params.runDir}
-        Script name       : ${workflow.scriptName ?: '-'}
-        Script ID         : ${workflow.scriptId ?: '-'}
-        Workflow session  : ${workflow.sessionId}
-        Workflow repo     : ${workflow.repository ?: '-' }
-        Workflow revision : ${workflow.repository ? "$workflow.revision ($workflow.commitId)" : '-'}
-        Workflow profile  : ${workflow.profile ?: '-'}
-        Workflow container: ${workflow.container ?: '-'}
-        container engine  : ${workflow.containerEngine?:'-'}
-        Nextflow run name : ${workflow.runName}
-        Nextflow version  : ${workflow.nextflow.version}, build ${workflow.nextflow.build} (${workflow.nextflow.timestamp})
+        Run ID                : ${runID}
+        Successful completion : ${workflow.success}
+        exit status           : ${workflow.exitStatus}
+        Launch time           : ${workflow.start.format('dd-MMM-yyyy HH:mm:ss')}
+        Ending time           : ${workflow.complete.format('dd-MMM-yyyy HH:mm:ss')} (duration: ${workflow.duration})
+        Launch directory      : ${workflow.launchDir}
+        Work directory        : ${workflow.workDir.toUriString()}
+        Nextflow directory    : ${workflow.projectDir}
+        Run directory         : ${runDir}
+        Output directory      : ${params.outputDir}
+        Samplesheet           : ${samplesheet}
+        Script name           : ${workflow.scriptName ?: '-'}
+        Script ID             : ${workflow.scriptId ?: '-'}
+        Workflow session      : ${workflow.sessionId}
+        Workflow repo         : ${workflow.repository ?: '-' }
+        Workflow revision     : ${workflow.repository ? "$workflow.revision ($workflow.commitId)" : '-'}
+        Workflow profile      : ${workflow.profile ?: '-'}
+        Workflow container    : ${workflow.container ?: '-'}
+        container engine      : ${workflow.containerEngine?:'-'}
+        Nextflow run name     : ${workflow.runName}
+        Nextflow version      : ${workflow.nextflow.version}, build ${workflow.nextflow.build} (${workflow.nextflow.timestamp})
+
         The command used to launch the workflow was as follows:
         ${workflow.commandLine}
-        --
+        ---------------------------
         This email was sent by Nextflow
         cite doi:10.1038/nbt.3820
         http://nextflow.io
