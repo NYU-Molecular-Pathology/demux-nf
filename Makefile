@@ -44,7 +44,8 @@ check-proddir:
 # - write the run ID to a text file in the output directory
 # - copy over a supplied samplesheet to the output directory
 # - if the samplesheet isn't already named SampleSheet.csv, create a symlink to it with that name
-RUNDIR:=runDir
+RUNDIR:=
+RUNDIRLINK:=runDir
 RUN_ID_FILE:=runID.txt
 SAMPLESHEET:=
 deploy: check-seqdir check-proddir
@@ -57,7 +58,8 @@ deploy: check-seqdir check-proddir
 	run_id_file="$${production_dir}/$(RUN_ID_FILE)" && \
 	echo ">>> Setting up for demultiplexing of $(RUNID) in directory: $${production_dir}" && \
 	git clone --recursive "$${repo_dir}" "$${production_dir}" && \
-	( cd  "$${production_dir}" && ln -s "$${project_dir}" "$(RUNDIR)" ) && \
+	echo ">>> Creating symlink to runDir" && \
+	( cd  "$${production_dir}" && ln -s "$${project_dir}" "$(RUNDIRLINK)" ) && \
 	echo "$(RUNID)" > "$${run_id_file}" && \
 	if [ -n "$(SAMPLESHEET)" ]; then \
 	echo ">>> Copying over samplesheet..." && \
@@ -73,11 +75,14 @@ deploy: check-seqdir check-proddir
 
 CONFIG_INPUT:=.config.json
 CONFIG_OUTPUT:=config.json
-config:
-	cp "$(CONFIG_INPUT)" "$(CONFIG_OUTPUT)"
-	[ -n "$(RUNID)" ] && python config.py --update "$(CONFIG_OUTPUT)" --runID "$(RUNID)" || :
-	[ -n "$(SAMPLESHEET)" ] && python config.py --update "$(CONFIG_OUTPUT)" --samplesheet "$(SAMPLESHEET)" || :
-	[ -n "$(RUNDIR)" ] && python config.py --update "$(CONFIG_OUTPUT)" --runDir "$(RUNDIR)" || :
+$(CONFIG_OUTPUT):
+	@echo ">>> Creating $(CONFIG_OUTPUT)"
+	@cp "$(CONFIG_INPUT)" "$(CONFIG_OUTPUT)"
+
+config: $(CONFIG_OUTPUT)
+	@[ -n "$(RUNID)" ] && echo ">>> Updating runID config" && python config.py --update "$(CONFIG_OUTPUT)" --runID "$(RUNID)" || :
+	@[ -n "$(SAMPLESHEET)" ] && echo ">>> Updating samplesheet config" && python config.py --update "$(CONFIG_OUTPUT)" --samplesheet "$(SAMPLESHEET)" || :
+	@[ -n "$(RUNDIR)" ] && echo ">>> Updating runDir config" && python config.py --update "$(CONFIG_OUTPUT)" --runDir "$(RUNDIR)" || :
 
 # ~~~~~ UPDATE THIS REPO ~~~~~ #
 update: pull update-submodules update-nextflow
