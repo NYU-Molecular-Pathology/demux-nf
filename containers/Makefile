@@ -43,3 +43,12 @@ test:
 	@echo ">>> Starting Vagrant..." && \
 	vagrant up test && \
 	vagrant ssh test -c "singularity shell /vagrant/$(IMG)"
+
+USER:=$(shell echo $$USER)
+REMOTE:=bigpurple.nyumc.org
+REMOTEDIR:=/gpfs/home/$(USER)/containers
+sync:
+	@$(MAKE) check-var
+	@$(MAKE) check-singularityimage
+	@echo 'command:'
+	@echo 'rsync --dry-run -vrhP -e ssh $(IMG) $(USER)@$(REMOTE):$(REMOTEDIR)'
