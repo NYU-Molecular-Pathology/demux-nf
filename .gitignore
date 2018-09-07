@@ -19,3 +19,5 @@ runID.txt
 *.csv
 config.json
 runDir
+.vagrant/
+*.simg

@@ -1,0 +1,17 @@
+# -*- mode: ruby -*-
+# vi: set ft=ruby :
+# Vagrant file for building and testing containers
+Vagrant.configure("2") do |config|
+    config.vm.box = "singularityware/singularity-2.4"
+
+    config.vm.define "test", autostart: false do |test|
+    end
+
+    config.vm.define "build", autostart: false do |build|
+        build.vm.provision "shell", inline: <<-SHELL
+            sudo apt-get update
+            sudo apt-get install debootstrap
+        SHELL
+    end
+    # config.vm.synced_folder "put_host_dir_path_here", "/Singularity"
+end
