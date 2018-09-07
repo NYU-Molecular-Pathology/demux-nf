@@ -23,8 +23,10 @@ From: centos:7
     cd build && \
     ../src/configure --prefix=/usr/local/bin/bcl2fastq && \
     make && \
-    make install && \
-    echo "export PATH=/usr/local/bin/bcl2fastq/bin/:${PATH}" >> $SINGULARITY_ENVIRONMENT
+    make install 
+
+%environment
+    export PATH=/usr/local/bin/bcl2fastq/bin/:${PATH}
 
 %test
     /usr/local/bin/bcl2fastq/bin/bcl2fastq --version
