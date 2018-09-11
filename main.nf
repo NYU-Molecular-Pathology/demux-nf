@@ -221,7 +221,6 @@ process bcl2fastq {
     [ "\${demult_threads}" -lt "2" ] && demult_threads=2
 
     echo "[bcl2fastq]: \$(which bcl2fastq) running with \${nthreads} threads and \${demult_threads} demultiplexing threads"
-    bcl2fastq --version
 
     bcl2fastq \
     --min-log-level WARNING \

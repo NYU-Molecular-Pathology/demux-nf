@@ -1,11 +1,12 @@
 SHELL:=/bin/bash
-NXF_VER:=0.29.0
+NXF_VER:=0.31.1
 EP:=
 
 # no default action to take
 none:
 
 # ~~~~~ SETUP PIPELINE ~~~~~ #
+HOSTNAME:=$(shell echo $$HOSTNAME)
 RUNID:=
 # e.g.: 180131_NB501073_0032_AHT5F3BGX3
 SEQDIR:=/ifs/data/molecpathlab/quicksilver
@@ -21,9 +22,9 @@ remove-framework:
 	mv "$(NXF_FRAMEWORK_DIR)" "$${new_framework}" ; \
 	fi
 
-./nextflow: 
+./nextflow:
 	@[ -d "$(NXF_FRAMEWORK_DIR)" ] && $(MAKE) remove-framework || :
-	@if [ "$$( module > /dev/null 2>&1; echo $$?)" -eq 0 ]; then module unload java && module load java/1.8 ; fi ; \
+	@if grep -q 'phoenix' <<<'$(HOSTNAME)'; then module unload java && module load java/1.8; fi ; \
 	export NXF_VER="$(NXF_VER)" && \
 	printf ">>> Installing Nextflow in the local directory\n" && \
 	curl -fsSL get.nextflow.io | bash
@@ -111,21 +112,27 @@ update-submodules: remote
 	@git submodule update --recursive --remote --init
 
 # ~~~~~ RUN PIPELINE ~~~~~ #
-run-NGS580: install
+run-NGS580-phoenix: install
 	@if [ "$$( module > /dev/null 2>&1; echo $$?)" -eq 0 ]; then module unload java && module load java/1.8 ; fi ; \
 	if [ -n "$(RUNID)" ]; then \
 	./nextflow run main.nf -resume -with-notification -with-timeline -with-trace -with-report -profile phoenix,NGS580 --runID $(RUNID) $(EP) ; \
 	elif [ -z "$(RUNID)" ]; then \
 	./nextflow run main.nf -resume -with-notification -with-timeline -with-trace -with-report -profile phoenix,NGS580 $(EP) ; \
 	fi
-# ./nextflow run email.nf $(EP)
 
-run-Archer: install
+run-Archer-phoenix: install
 	@if [ "$$( module > /dev/null 2>&1; echo $$?)" -eq 0 ]; then module unload java && module load java/1.8 ; fi ; \
 	if [ -n "$(RUNID)" ]; then \
 	./nextflow run main.nf -resume -with-notification -with-timeline -with-trace -with-report -profile phoenix,Archer --runID $(RUNID) $(EP) ; \
 	elif [ -z "$(RUNID)" ]; then \
 	./nextflow run main.nf -resume -with-notification -with-timeline -with-trace -with-report -profile phoenix,Archer $(EP) ; \
+	fi
+
+run-NGS580-bigpurple: install
+	if [ -n "$(RUNID)" ]; then \
+	./nextflow run main.nf -resume -with-notification -with-timeline -with-trace -with-report -profile bigpurple,NGS580 --runID $(RUNID) $(EP) ; \
+	elif [ -z "$(RUNID)" ]; then \
+	./nextflow run main.nf -resume -with-notification -with-timeline -with-trace -with-report -profile bigpurple,NGS580 $(EP) ; \
 	fi
 
 # submit the parent Nextflow process to phoenix HPC as a qsub job
