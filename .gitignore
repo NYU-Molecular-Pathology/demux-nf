@@ -21,3 +21,4 @@ config.json
 runDir
 .vagrant/
 *.simg
+.DS_Store
