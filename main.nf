@@ -47,7 +47,7 @@ if(params.runID == null){
 def default_runDir = "runDir"
 def default_runDir_obj = new File("${default_runDir}")
 def default_runDir_path
-def system_runDir_path = "${params.sequencer_dir}/${runID}"
+def system_runDir_path = "${params.sequencerDir}/${runID}"
 def system_runDir_obj = new File("${system_runDir_path}")
 def runDir
 if( params.runDir == null ){
@@ -105,7 +105,7 @@ if(params.samplesheet == null){
 // ~~~~~ START WORKFLOW ~~~~~ //
 log.info "~~~~~~~ Demultiplexing Pipeline ~~~~~~~"
 log.info "* Run ID:          ${runID}"
-log.info "* Sequencer dir:   ${params.sequencer_dir}"
+log.info "* Sequencer dir:   ${params.sequencerDir}"
 log.info "* Run dir:         ${runDir}"
 log.info "* Output dir:      ${params.outputDir} "
 log.info "* Samplesheet:     ${samplesheet}"

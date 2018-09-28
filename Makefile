@@ -9,8 +9,8 @@ none:
 HOSTNAME:=$(shell echo $$HOSTNAME)
 RUNID:=
 # e.g.: 180131_NB501073_0032_AHT5F3BGX3
-SEQDIR:=/ifs/data/molecpathlab/quicksilver
-PRODDIR:=/ifs/data/molecpathlab/production/Demultiplexing
+SEQDIR:=/gpfs/data/molecpathlab/production/quicksilver
+PRODDIR:=/gpfs/data/molecpathlab/production/Demultiplexing
 USER_HOME=$(shell echo "$$HOME")
 USER_DATE:=$(shell date +%s)
 NXF_FRAMEWORK_DIR:=$(USER_HOME)/.nextflow/framework/$(NXF_VER)
