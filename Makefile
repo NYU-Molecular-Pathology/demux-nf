@@ -111,6 +111,11 @@ update-submodules: remote
 	@echo ">>> Updating git submodules"
 	@git submodule update --recursive --remote --init
 
+# fix permissions on this directory
+perm:
+	chmod -R g+rw *
+	find . -type f -name "*.py" -exec chmod g+X {} \;
+
 # ~~~~~ RUN PIPELINE ~~~~~ #
 run-NGS580-phoenix: install
 	@if [ "$$( module > /dev/null 2>&1; echo $$?)" -eq 0 ]; then module unload java && module load java/1.8 ; fi ; \
@@ -134,6 +139,7 @@ run-NGS580-bigpurple: install
 	elif [ -z "$(RUNID)" ]; then \
 	./nextflow run main.nf -resume -with-notification -with-timeline -with-trace -with-report -profile bigpurple,NGS580 $(EP) ; \
 	fi
+	$(MAKE) perm
 
 # submit the parent Nextflow process to phoenix HPC as a qsub job
 submit-phoenix-NGS580:
