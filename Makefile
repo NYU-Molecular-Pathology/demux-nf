@@ -142,6 +142,15 @@ run-NGS580-bigpurple: install
 	fi
 	$(MAKE) perm
 
+run-Archer-bigpurple: install
+	if [ -n "$(RUNID)" ]; then \
+	./nextflow run main.nf -resume -with-notification -with-timeline -with-trace -with-report -profile bigpurple,Archer --runID $(RUNID) $(EP) ; \
+	elif [ -z "$(RUNID)" ]; then \
+	./nextflow run main.nf -resume -with-notification -with-timeline -with-trace -with-report -profile bigpurple,Archer $(EP) ; \
+	fi
+	$(MAKE) perm
+
+
 # submit the parent Nextflow process to phoenix HPC as a qsub job
 submit-phoenix-NGS580:
 	@qsub_logdir="logs" ; \
