@@ -52,7 +52,7 @@ deploy: check-seqdir check-proddir
 	@[ -z "$(RUNID)" ] && printf ">>> invalid RUNID specified: $(RUNID)\n" && exit 1 || :
 	@[ ! -d "$(SEQDIR)/$(RUNID)" ] && printf ">>> Project directory does not exist: $(SEQDIR)/$(RUNID)\n" && exit 1 || :
 	@[ ! -d "$(SEQDIR)/$(RUNID)/Data/Intensities/BaseCalls" ] && printf ">>> Basecalls directory does not exist for run: $(SEQDIR)/$(RUNID)\n" && exit 1 || :
-	project_dir="$(SEQDIR)/$(RUNID)" && \
+	@project_dir="$(SEQDIR)/$(RUNID)" && \
 	production_dir="$(PRODDIR)/$(RUNID)" && \
 	repo_dir="$${PWD}" && \
 	run_id_file="$${production_dir}/$(RUN_ID_FILE)" && \
@@ -70,7 +70,6 @@ deploy: check-seqdir check-proddir
 	echo ">>> Creating config file..." && \
 	$(MAKE) config CONFIG_OUTPUT="$${production_dir}/config.json" SAMPLESHEET="$$(basename "$(SAMPLESHEET)")" RUNDIR="$${project_dir}" && \
 	echo ">>> Demultiplexing directory prepared: $${production_dir}"
-# output_dir="$${production_dir}/$$(basename $${repo_dir})" && \
 
 CONFIG_INPUT:=.config.json
 CONFIG_OUTPUT:=config.json
