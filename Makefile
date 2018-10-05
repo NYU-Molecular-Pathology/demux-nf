@@ -60,7 +60,6 @@ deploy: check-seqdir check-proddir
 	git clone --recursive "$${repo_dir}" "$${production_dir}" && \
 	echo ">>> Creating symlink to runDir" && \
 	( cd  "$${production_dir}" && ln -s "$${project_dir}" "$(RUNDIRLINK)" ) && \
-	echo "$(RUNID)" > "$${run_id_file}" && \
 	if [ -n "$(SAMPLESHEET)" ]; then \
 	echo ">>> Copying over samplesheet..." && \
 	cp "$(SAMPLESHEET)" "$${production_dir}/" ; \
