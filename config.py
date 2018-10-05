@@ -36,12 +36,16 @@ def main(**kwargs):
     runID = kwargs.pop('runID', None)
     runDir = kwargs.pop('runDir', None)
     samplesheet = kwargs.pop('samplesheet', None)
+    system = kwargs.pop('system', None)
+    seqType = kwargs.pop('seqType', None)
     updateFile = kwargs.pop('updateFile', False)
 
     data = {
     'runID': runID,
     'runDir': runDir,
-    'samplesheet': samplesheet
+    'samplesheet': samplesheet,
+    'system': system,
+    'seqType': seqType
     }
 
     if updateFile is False:
@@ -57,6 +61,8 @@ def parse():
     parser.add_argument("--runID", default = None, dest = 'runID', help="Run ID")
     parser.add_argument("--runDir", default = None, dest = 'runDir', help="Run directory")
     parser.add_argument("--samplesheet", default = None, dest = 'samplesheet', help="Samplesheet file")
+    parser.add_argument("--system", default = None, dest = 'system', help="Hostname of the server being used")
+    parser.add_argument("--seqType", default = None, dest = 'seqType', help="Identifier for the type of sequencing, e.g. Archer, NGS580, etc.")
     parser.add_argument("-u", "--update", default = False, dest = 'updateFile', help="JSON file to update")
 
     args = parser.parse_args()

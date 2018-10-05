@@ -45,7 +45,6 @@ check-proddir:
 # - write the run ID to a text file in the output directory
 # - copy over a supplied samplesheet to the output directory
 # - if the samplesheet isn't already named SampleSheet.csv, create a symlink to it with that name
-RUNDIR:=
 RUNDIRLINK:=runDir
 RUN_ID_FILE:=runID.txt
 SAMPLESHEET:=
@@ -80,10 +79,14 @@ $(CONFIG_OUTPUT):
 	@echo ">>> Creating $(CONFIG_OUTPUT)"
 	@cp "$(CONFIG_INPUT)" "$(CONFIG_OUTPUT)"
 
+RUNDIR:=
+SEQTYPE:=
 config: $(CONFIG_OUTPUT)
 	@[ -n "$(RUNID)" ] && echo ">>> Updating runID config" && python config.py --update "$(CONFIG_OUTPUT)" --runID "$(RUNID)" || :
 	@[ -n "$(SAMPLESHEET)" ] && echo ">>> Updating samplesheet config" && python config.py --update "$(CONFIG_OUTPUT)" --samplesheet "$(SAMPLESHEET)" || :
 	@[ -n "$(RUNDIR)" ] && echo ">>> Updating runDir config" && python config.py --update "$(CONFIG_OUTPUT)" --runDir "$(RUNDIR)" || :
+	@[ -n "$(HOSTNAME)" ] && echo ">>> Updating system config" && python config.py --update "$(CONFIG_OUTPUT)" --system "$(HOSTNAME)" || :
+	@[ -n "$(SEQTYPE)" ] && echo ">>> Updating seqType config" && python config.py --update "$(CONFIG_OUTPUT)" --seqType "$(SEQTYPE)" || :
 
 # ~~~~~ UPDATE THIS REPO ~~~~~ #
 update: pull update-submodules update-nextflow

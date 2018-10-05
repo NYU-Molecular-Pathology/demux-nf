@@ -1,5 +1,7 @@
 {
-    "runID": null,
     "runDir": null,
-    "samplesheet": null
+    "seqType": null,
+    "samplesheet": null,
+    "runID": null,
+    "system": null
 }
