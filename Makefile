@@ -165,8 +165,14 @@ submit-phoenix-Archer:
 	echo 'make run-Archer EP="$(EP)" RUNID="$(RUNID)"' | qsub -wd "$$PWD" -o :$${qsub_logdir}/ -e :$${qsub_logdir}/ -j y -N "$$job_name" -q all.q
 
 
-
-
+# ~~~~~ DELIVERABLE ~~~~~ #
+# set up a directory to organize output for delivery
+# samplesheet with list of sample ID's to match amongst the .fastq.gz files; one per line
+SHEET=
+# identifier for the client 
+CLIENT=
+deliverable:
+	python bin/deliverable.py "$(CLIENT)" "$(SHEET)"
 
 # ~~~~~ FINALIZE ~~~~~ #
 # steps for finalizing the Nextflow pipeline 'output' publishDir and 'work' directories

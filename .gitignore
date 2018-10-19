@@ -22,3 +22,4 @@ runDir
 .vagrant/
 *.simg
 .DS_Store
+deliverable/*
