@@ -1,5 +1,5 @@
 SHELL:=/bin/bash
-NXF_VER:=0.31.1
+export NXF_VER:=0.31.1
 EP:=
 
 # no default action to take
@@ -25,7 +25,6 @@ remove-framework:
 ./nextflow:
 	@[ -d "$(NXF_FRAMEWORK_DIR)" ] && $(MAKE) remove-framework || :
 	@if grep -q 'phoenix' <<<'$(HOSTNAME)'; then module unload java && module load java/1.8; fi ; \
-	export NXF_VER="$(NXF_VER)" && \
 	printf ">>> Installing Nextflow in the local directory\n" && \
 	curl -fsSL get.nextflow.io | bash
 
@@ -85,6 +84,38 @@ config: $(CONFIG_OUTPUT)
 	@[ -n "$(RUNDIR)" ] && echo ">>> Updating runDir config" && python config.py --update "$(CONFIG_OUTPUT)" --runDir "$(RUNDIR)" || :
 	@[ -n "$(HOSTNAME)" ] && echo ">>> Updating system config" && python config.py --update "$(CONFIG_OUTPUT)" --system "$(HOSTNAME)" || :
 	@[ -n "$(SEQTYPE)" ] && echo ">>> Updating seqType config" && python config.py --update "$(CONFIG_OUTPUT)" --seqType "$(SEQTYPE)" || :
+
+# denote that the run passed QC after manual review of reports
+check-samplesheet:
+	@if [ ! -f "$(SAMPLESHEET)" ]; then echo ">>> ERROR: samplesheet does not exist: $(SAMPLESHEET)"; exit 1 ; fi
+passed: check-config-output
+	@SAMPLESHEET="$$(python -c 'import json; print(json.load(open("$(CONFIG_OUTPUT)")).get("samplesheet", ""))')" && \
+	$(MAKE) check-samplesheet SAMPLESHEET="$${SAMPLESHEET}" && \
+	python bin/pass-run.py "$${SAMPLESHEET}"
+
+# set up a new NGS580 analysis based on this directory results; requires config file
+# location of production NGS580 deployment pipeline for starting new analyses from
+NGS580_PIPELINE_DIR:=/gpfs/data/molecpathlab/pipelines/NGS580-nf
+UNALIGNED_DIR:=output/Unaligned
+PASSED0=$(UNALIGNED_DIR)/passed0
+check-NGS580_PIPELINE_DIR:
+	@if [ ! -d "$(NGS580_PIPELINE_DIR)" ]; then echo ">>> ERROR: NGS580_PIPELINE_DIR does not exist: $(NGS580_PIPELINE_DIR)"; exit 1; fi
+check-config-output:
+	@if [ ! -f "$(CONFIG_OUTPUT)" ]; then echo ">>> ERROR: config file does not exist: $(CONFIG_OUTPUT)"; exit 1 ; fi
+check-runID:
+	@if [ -z "$(RUNID)" ]; then echo ">>> ERROR: invalid RUNID value: $(RUNID)"; exit 1; fi
+check-passed:
+	@if [ ! -e "$(PASSED0)" ]; then echo ">>> ERROR: 'passed0' does not exist: $(PASSED0); Was this run checked & passed?"; exit 1; fi
+deploy-NGS580: check-NGS580_PIPELINE_DIR check-config-output check-passed
+	RUNID="$$(python -c 'import json; print(json.load(open("$(CONFIG_OUTPUT)")).get("runID", ""))')" && \
+	FASTQDIR="$$(python -c 'import os; print(os.path.realpath("$(PASSED0)"))')" && \
+	$(MAKE) check-runID RUNID="$${RUNID}" && \
+	cd "$(NGS580_PIPELINE_DIR)" && \
+	make deploy FASTQDIR="$${FASTQDIR}" RUNID="$${RUNID}"
+
+
+
+
 
 # ~~~~~ UPDATE THIS REPO ~~~~~ #
 update: pull update-submodules update-nextflow
@@ -169,7 +200,7 @@ submit-phoenix-Archer:
 # set up a directory to organize output for delivery
 # samplesheet with list of sample ID's to match amongst the .fastq.gz files; one per line
 SHEET=
-# identifier for the client 
+# identifier for the client
 CLIENT=
 deliverable:
 	python bin/deliverable.py "$(CLIENT)" "$(SHEET)"
