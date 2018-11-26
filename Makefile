@@ -6,6 +6,7 @@ EP:=
 none:
 
 # ~~~~~ SETUP PIPELINE ~~~~~ #
+TIMESTAMP:=$(shell date +%s)
 HOSTNAME:=$(shell echo $$HOSTNAME)
 RUNID:=
 # e.g.: 180131_NB501073_0032_AHT5F3BGX3
@@ -149,37 +150,60 @@ perm:
 	find . -type f -name "*.py" -exec chmod g+X {} \;
 
 # ~~~~~ RUN PIPELINE ~~~~~ #
+RESUME:=-resume
+# try to detect 'run' config automatically
+_RUN:=
+SYSTEM:=
+ifneq ($(_RUN),)
+export SYSTEM:=$(shell python -c 'import json; print( json.load(open("$(CONFIG_OUTPUT)")).get("system", "None") )')
+export SEQTYPE:=$(shell python -c 'import json; print( json.load(open("$(CONFIG_OUTPUT)")).get("seqType", "None") )')
+endif
+run:
+	@log_file="logs/nextflow.$(TIMESTAMP).stdout.log" ; \
+	echo ">>> Running with stdout log file: $${log_file}" ; \
+	$(MAKE) run-recurse _RUN=1 2>&1 | tee -a "$${log_file}" ; \
+	echo ">>> Run completed, stdout log file: $${log_file}"
+
+run-recurse:
+	@echo "SYSTEM: $${SYSTEM}, SEQTYPE: $${SEQTYPE}" ; \
+	if grep -q 'phoenix' <<<"$${SYSTEM}" && grep -q 'NGS580' <<<"$${SEQTYPE}" ; then echo ">>> Running run-NGS580-phoenix"; $(MAKE) run-NGS580-phoenix ; \
+	elif grep -q 'phoenix' <<<"$${SYSTEM}" && grep -q 'Archer' <<<"$${SEQTYPE}" ; then echo ">>> Running run-Archer-phoenix"; $(MAKE) run-Archer-phoenix ; \
+	elif grep -q 'bigpurple' <<<"$${SYSTEM}" && grep -q 'NGS580' <<<"$${SEQTYPE}" ; then echo ">>> Running run-NGS580-bigpurple"; $(MAKE) run-NGS580-bigpurple ; \
+	elif grep -q 'bigpurple' <<<"$${SYSTEM}" && grep -q 'Archer' <<<"$${SEQTYPE}" ; then echo ">>> Running run-Archer-bigpurple"; $(MAKE) run-Archer-bigpurple ; \
+	else echo ">>> ERROR: could not determine 'run' method to use"; exit 1; fi ; \
+
+# methods to use for each specific profile config
 run-NGS580-phoenix: install
 	@if [ "$$( module > /dev/null 2>&1; echo $$?)" -eq 0 ]; then module unload java && module load java/1.8 ; fi ; \
 	if [ -n "$(RUNID)" ]; then \
-	./nextflow run main.nf -resume -with-notification -with-timeline -with-trace -with-report -profile phoenix,NGS580 --runID $(RUNID) $(EP) ; \
+	./nextflow run main.nf $(RESUME) -with-notification -with-timeline -with-trace -with-report -profile phoenix,NGS580 --runID $(RUNID) $(EP) ; \
 	elif [ -z "$(RUNID)" ]; then \
-	./nextflow run main.nf -resume -with-notification -with-timeline -with-trace -with-report -profile phoenix,NGS580 $(EP) ; \
+	./nextflow run main.nf $(RESUME) -with-notification -with-timeline -with-trace -with-report -profile phoenix,NGS580 $(EP) ; \
 	fi
 
 run-Archer-phoenix: install
 	@if [ "$$( module > /dev/null 2>&1; echo $$?)" -eq 0 ]; then module unload java && module load java/1.8 ; fi ; \
 	if [ -n "$(RUNID)" ]; then \
-	./nextflow run main.nf -resume -with-notification -with-timeline -with-trace -with-report -profile phoenix,Archer --runID $(RUNID) $(EP) ; \
+	./nextflow run main.nf $(RESUME) -with-notification -with-timeline -with-trace -with-report -profile phoenix,Archer --runID $(RUNID) $(EP) ; \
 	elif [ -z "$(RUNID)" ]; then \
-	./nextflow run main.nf -resume -with-notification -with-timeline -with-trace -with-report -profile phoenix,Archer $(EP) ; \
+	./nextflow run main.nf $(RESUME) -with-notification -with-timeline -with-trace -with-report -profile phoenix,Archer $(EP) ; \
 	fi
 
 run-NGS580-bigpurple: install
 	if [ -n "$(RUNID)" ]; then \
-	./nextflow run main.nf -resume -with-notification -with-timeline -with-trace -with-report -profile bigpurple,NGS580 --runID $(RUNID) $(EP) ; \
+	./nextflow run main.nf $(RESUME) -with-notification -with-timeline -with-trace -with-report -profile bigpurple,NGS580 --runID $(RUNID) $(EP) ; \
 	elif [ -z "$(RUNID)" ]; then \
-	./nextflow run main.nf -resume -with-notification -with-timeline -with-trace -with-report -profile bigpurple,NGS580 $(EP) ; \
+	./nextflow run main.nf $(RESUME) -with-notification -with-timeline -with-trace -with-report -profile bigpurple,NGS580 $(EP) ; \
 	fi
-	# $(MAKE) perm
+# $(MAKE) perm
 
 run-Archer-bigpurple: install
 	if [ -n "$(RUNID)" ]; then \
-	./nextflow run main.nf -resume -with-notification -with-timeline -with-trace -with-report -profile bigpurple,Archer --runID $(RUNID) $(EP) ; \
+	./nextflow run main.nf $(RESUME) -with-notification -with-timeline -with-trace -with-report -profile bigpurple,Archer --runID $(RUNID) $(EP) ; \
 	elif [ -z "$(RUNID)" ]; then \
-	./nextflow run main.nf -resume -with-notification -with-timeline -with-trace -with-report -profile bigpurple,Archer $(EP) ; \
+	./nextflow run main.nf $(RESUME) -with-notification -with-timeline -with-trace -with-report -profile bigpurple,Archer $(EP) ; \
 	fi
-	# $(MAKE) perm
+# $(MAKE) perm
 
 
 # submit the parent Nextflow process to phoenix HPC as a qsub job

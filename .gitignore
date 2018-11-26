@@ -23,3 +23,4 @@ runDir
 *.simg
 .DS_Store
 deliverable/*
+logs/*
