@@ -12,63 +12,43 @@ git clone --recursive https://github.com/NYU-Molecular-Pathology/demux-nf.git
 
 ## Deployment
 
-It is recommended to use the included `deploy` feature to create a new directory for demultiplexing based on a currently existing sequencing run directory.
+The included `deploy` recipe should be used to create a new directory for demultiplexing based on a currently existing sequencing run directory. Include arguments that describe the configuration for your sequencing run.
 
 ```
 cd demux-nf
-make deploy SEQDIR=/path/to/sequencer/data PRODDIR=/path/to/demultiplexing/output
+make deploy RUNID=170809_NB501073_0019_AH5FFYBGX3 SAMPLESHEET=SampleSheet.csv SEQTYPE=Archer
 ```
 
-- `SEQDIR` and `PRODDIR` come already hard-coded for NYU server locations
+arguments:
 
-Its also a good idea to include parameters about the run which you are preparing to demultiplexing.
+  - `RUNID`: the identifier given to the run by the sequencer
+  
+  - `SAMPLESHEET`: the samplesheet required for demultiplexing with `bcl2fastq`
+  
+  - `SEQTYPE`: the type of sequencing; currently only `Archer` or `NGS580` are used
+  
+  - `SEQDIR`: parent directory where the sequencer outputs its data (pre-configured for NYU server locations)
+  
+  - `PRODDIR`: parent directory where demultiplexing output should be stored (pre-configured for NYU server locations)
+  
 
-```
-make deploy RUNID=170809_NB501073_0019_AH5FFYBGX3 SAMPLESHEET=/path/to/sequencer/data/170809_NB501073_0019_AH5FFYBGX3/Data/Intensities/BaseCalls/SampleSheet.csv
-```
-
-This will clone into a new directory and configure it to demultiplex the specified sequencing run, making it easier to run subsequent commands.
+This will first check that the specified run exists on the server before cloning into a new directory at the given production output location and configuring it for demultiplexing using the subsequent commands described here. 
 
 ## Run Workflow
 
-It is recommended to run the workflow using the included configuration settings and command shortcuts contained in the `Makefile`. Run the workflow from the directory created with `make deploy`, or one you cloned & configured yourself.
-
-### NGS580
-
-To run the included NGS580 panel demultiplexing workflow, simply use:
+Assuming you used `make deploy` or `make config` to prepare your demultiplexing directory, the following command can be used to automatically run the workflow based on the pre-defined settings and settings from your current system.
 
 ```
-make run-NGS580
-```
-- if `config.json` is present, it will be examined for run ID, run directory location, and samplesheet file location
-
-- alternatively, these options can be supplied via the `Makefile` and extra Nextflow parameters:
-
-
-```
-make run-NGS580 RUNID=170809_NB501073_0019_AH5FFYBGX3 EP="--samplesheet SampleSheet.csv --runDir /path/to/sequencer/data/170809_NB501073_0019_AH5FFYBGX3"
+make run
 ```
 
-### Archer
-
-To run the included ArcherDX analysis demultiplexing workflow, run:
-
+Extra parameters to be passed to Nextflow can be supplied with the `EP` argument:
 
 ```
-make run-Archer
+make run EP='--samplesheet SampleSheet.csv --runDir /path/to/sequencer/data/170809_NB501073_0019_AH5FFYBGX3'
 ```
 
-The same configuration details from the NGS580 workflow also apply
-
-### HPC Cluster submission
-
-The parent Nextflow process can be submitted to run as a `qsub` job with the `submit-phoenix-NGS580` Makefile recipe. Example: 
-
-```
-make submit-phoenix-NGS580
-```
-
-_NOTE:_ This only runs the parent Nextflow process as a cluster job; Nextflow already submits its processes as cluster jobs themselves, as per profile configurations in `nextflow.config`. 
+For alternative `run` methods, consult the `Makefile`.
 
 # Configuration
 
@@ -102,46 +82,70 @@ nextflow run main.nf --runID 12345
 
 # Extras
 
-- re-initialize configurations (overwrites old `config.json`)
+- (re)initialize configurations (overwrites old `config.json`):
 
 ```
 make config RUNDIR=/path/to/sequencer/data/170809_NB501073_0019_AH5FFYBGX3 SAMPLESHEET=SampleSheet.csv RUNID=170809_NB501073_0019_AH5FFYBGX3
 ```
 
-- update an existing directory to the latest version of this repo
+- update an existing directory to the latest version of this repo:
 
 ```
 make update
 ```
 
-- clean up workflow intermediary files to save space
+- clean up workflow intermediary files to save space (workflow cannot be resumed after this):
 
 ```
 make finalize
 ```
 
-- clean up output from all old workflows (saves current workflow output)
+- clean up output from all old workflows (saves current workflow output):
 
 ```
 make clean
 ```
 
-- clean up the output from all workflows (including the most recent one)
+- delete the output from all workflows:
 
 ```
 make clean-all
 ```
 
-# Software Requirements
+- mark that the demultiplexing suceeded and the results passed QC for downstream analysis:
+
+```
+make passed
+```
+
+- deploy a new NGS580 analysis using the current results:
+
+```
+make deploy-NGS580
+```
+
+- make a 'deliverables' directory with just the results for samples for a specific client
+
+```
+make deliverable CLIENT=somelab SHEET=list_of_clients_samples.txt
+```
+
+# Software 
+
+Required:
 
 - Java 8 (Nextflow)
+
+- Python 2.7+
+
+- GNU `make`
+
+Optional; must be installed to system or available with Singularity containers:
 
 - `bcl2fastq` version 2.17.1
 
 - FastQC version 0.11.7
 
-- Python 2.7+
-
-- R (3.3.0+ recommended, with `knitr` and `rmarkdown` installed)
+- R (3.3.0+, with `knitr` and `rmarkdown` libraries)
 
 - Pandoc 1.13.1+
