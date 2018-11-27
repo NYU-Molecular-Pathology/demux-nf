@@ -52,24 +52,26 @@ deploy: check-seqdir check-proddir
 	@[ -z "$(RUNID)" ] && printf ">>> invalid RUNID specified: $(RUNID)\n" && exit 1 || :
 	@[ ! -d "$(SEQDIR)/$(RUNID)" ] && printf ">>> Project directory does not exist: $(SEQDIR)/$(RUNID)\n" && exit 1 || :
 	@[ ! -d "$(SEQDIR)/$(RUNID)/Data/Intensities/BaseCalls" ] && printf ">>> Basecalls directory does not exist for run: $(SEQDIR)/$(RUNID)\n" && exit 1 || :
-	@project_dir="$(SEQDIR)/$(RUNID)" && \
-	production_dir="$(PRODDIR)/$(RUNID)" && \
+	@[ ! -f "$(SEQDIR)/$(RUNID)/RTAComplete.txt" ] && printf ">>> $(SEQDIR)/$(RUNID)/RTAComplete.txt does not exist, the run might not be finished yet\n" && exit 1 || :
+	@[ ! -f "$(SEQDIR)/$(RUNID)/RunCompletionStatus.xml" ] && printf ">>> $(SEQDIR)/$(RUNID)/RunCompletionStatus.xml does not exist, the run might not be finished yet\n" && exit 1 || :
+	@sequencing_run_results_dir="$(SEQDIR)/$(RUNID)" && \
+	demultiplexing_output_dir="$(PRODDIR)/$(RUNID)" && \
 	repo_dir="$${PWD}" && \
-	run_id_file="$${production_dir}/$(RUN_ID_FILE)" && \
-	echo ">>> Setting up for demultiplexing of $(RUNID) in directory: $${production_dir}" && \
-	git clone --recursive "$${repo_dir}" "$${production_dir}" && \
+	run_id_file="$${demultiplexing_output_dir}/$(RUN_ID_FILE)" && \
+	echo ">>> Setting up for demultiplexing of $(RUNID) in directory: $${demultiplexing_output_dir}" && \
+	git clone --recursive "$${repo_dir}" "$${demultiplexing_output_dir}" && \
 	echo ">>> Creating symlink to runDir" && \
-	( cd  "$${production_dir}" && ln -s "$${project_dir}" "$(RUNDIRLINK)" ) && \
+	( cd  "$${demultiplexing_output_dir}" && ln -s "$${sequencing_run_results_dir}" "$(RUNDIRLINK)" ) && \
 	if [ -n "$(SAMPLESHEET)" ]; then \
 	echo ">>> Copying over samplesheet..." && \
-	cp "$(SAMPLESHEET)" "$${production_dir}/" ; \
+	cp "$(SAMPLESHEET)" "$${demultiplexing_output_dir}/" ; \
 	if [ "$$(basename "$(SAMPLESHEET)")" != SampleSheet.csv ]; then \
-	( cd "$${production_dir}" && ln -s "$$(basename $(SAMPLESHEET))" SampleSheet.csv ) ; \
+	( cd "$${demultiplexing_output_dir}" && ln -s "$$(basename $(SAMPLESHEET))" SampleSheet.csv ) ; \
 	fi ; \
 	fi && \
 	echo ">>> Creating config file..." && \
-	$(MAKE) config CONFIG_OUTPUT="$${production_dir}/config.json" SAMPLESHEET="$$(basename "$(SAMPLESHEET)")" RUNDIR="$${project_dir}" && \
-	echo ">>> Demultiplexing directory prepared: $${production_dir}"
+	$(MAKE) config CONFIG_OUTPUT="$${demultiplexing_output_dir}/$(CONFIG_OUTPUT)" SAMPLESHEET="$$(basename "$(SAMPLESHEET)")" RUNDIR="$${sequencing_run_results_dir}" && \
+	echo ">>> Demultiplexing directory prepared: $${demultiplexing_output_dir}"
 
 CONFIG_INPUT:=.config.json
 CONFIG_OUTPUT:=config.json
