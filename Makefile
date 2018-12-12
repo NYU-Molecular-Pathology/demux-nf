@@ -7,6 +7,7 @@ none:
 
 # ~~~~~ SETUP PIPELINE ~~~~~ #
 TIMESTAMP:=$(shell date +%s)
+TIMESTAMP_str:=$(shell date +"%Y-%m-%d-%H-%M-%S")
 DIRNAME:=$(shell python -c 'import os; print(os.path.basename(os.path.realpath(".")))')
 ABSDIR:=$(shell python -c 'import os; print(os.path.realpath("."))')
 HOSTNAME:=$(shell echo $$HOSTNAME)
@@ -273,6 +274,21 @@ kill: $(NXF_NODEFILE) $(NXF_PIDFILE)
 # 	mkdir -p "$${qsub_logdir}" ; \
 # 	job_name="demux-nf" ; \
 # 	echo 'make run-Archer EP="$(EP)" RUNID="$(RUNID)"' | qsub -wd "$$PWD" -o :$${qsub_logdir}/ -e :$${qsub_logdir}/ -j y -N "$$job_name" -q all.q
+
+# save a record of the most recent Nextflow run completion
+PRE:=
+RECDIR:=recorded-runs/$(PRE)demux-$(DIRNAME)_$(TIMESTAMP_str)
+STDOUTLOGPATH:=
+STDOUTLOG:=
+ALL_LOGS:=
+record: STDOUTLOGPATH=$(shell ls -d -1t $(LOGDIR)/log.*.out | head -1 | python -c 'import sys, os; print(os.path.realpath(sys.stdin.readlines()[0].strip()))' )
+record: STDOUTLOG=$(shell basename "$(STDOUTLOGPATH)")
+record: ALL_LOGS=$(shell find "$(LOGDIR)" -type f -name '*$(STDOUTLOG)*')
+record:
+	@mkdir -p "$(RECDIR)" && \
+	cp -a *.html trace.txt .nextflow.log "$(RECDIR)/"&& \
+	for item in $(ALL_LOGS); do cp -a "$${item}" "$(RECDIR)/"; done ; \
+	echo ">>> Copied execution reports and logs to: $(RECDIR)"
 
 
 # ~~~~~ DELIVERABLE ~~~~~ #

@@ -29,3 +29,4 @@ logs/*
 .nextflow.pid
 .nextflow.submitted
 .nextflow.submitted.log
+recorded-runs/
