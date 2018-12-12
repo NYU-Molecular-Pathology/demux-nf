@@ -24,3 +24,8 @@ runDir
 .DS_Store
 deliverable/*
 logs/*
+.nextflow.jobid
+.nextflow.node
+.nextflow.pid
+.nextflow.submitted
+.nextflow.submitted.log

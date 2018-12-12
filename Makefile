@@ -7,6 +7,8 @@ none:
 
 # ~~~~~ SETUP PIPELINE ~~~~~ #
 TIMESTAMP:=$(shell date +%s)
+DIRNAME:=$(shell python -c 'import os; print(os.path.basename(os.path.realpath(".")))')
+ABSDIR:=$(shell python -c 'import os; print(os.path.realpath("."))')
 HOSTNAME:=$(shell echo $$HOSTNAME)
 RUNID:=
 # e.g.: 180131_NB501073_0032_AHT5F3BGX3
@@ -153,6 +155,12 @@ perm:
 
 # ~~~~~ RUN PIPELINE ~~~~~ #
 RESUME:=-resume
+LOGDIR:=logs
+LOGDIRABS:=$(shell python -c 'import os; print(os.path.realpath("$(LOGDIR)"))')
+LOGID:=$(TIMESTAMP)
+LOGFILEBASE:=log.$(LOGID).out
+LOGFILE:=$(LOGDIR)/$(LOGFILEBASE)
+
 # try to detect 'run' config automatically
 _RUN:=
 SYSTEM:=
@@ -161,10 +169,9 @@ export SYSTEM:=$(shell python -c 'import json; print( json.load(open("$(CONFIG_O
 export SEQTYPE:=$(shell python -c 'import json; print( json.load(open("$(CONFIG_OUTPUT)")).get("seqType", "None") )')
 endif
 run:
-	@log_file="logs/nextflow.$(TIMESTAMP).stdout.log" ; \
-	echo ">>> Running with stdout log file: $${log_file}" ; \
-	$(MAKE) run-recurse _RUN=1 2>&1 | tee -a "$${log_file}" ; \
-	echo ">>> Run completed, stdout log file: $${log_file}"
+	@echo ">>> Running with stdout log file: $(LOGFILE)" ; \
+	$(MAKE) run-recurse _RUN=1 2>&1 | tee -a "$(LOGFILE)" ; \
+	echo ">>> Run completed, stdout log file: $(LOGFILE)"
 
 run-recurse:
 	@echo "SYSTEM: $${SYSTEM}, SEQTYPE: $${SEQTYPE}" ; \
@@ -207,19 +214,65 @@ run-Archer-bigpurple: install
 	fi
 # $(MAKE) perm
 
+# submit the parent Nextflow process to HPC as a cluster job
+SUBJOBNAME:=demux-$(DIRNAME)
+SUBLOG:=$(LOGDIRABS)/slurm-%j.$(LOGFILEBASE)
+SUBQ:=cpu_long
+SUBTHREADS:=4
+SUBEP:=
+NXF_NODEFILE:=.nextflow.node
+NXF_JOBFILE:=.nextflow.jobid
+NXF_PIDFILE:=.nextflow.pid
+NXF_SUBMIT:=.nextflow.submitted
+NXF_SUBMITLOG:=.nextflow.submitted.log
+REMOTE:=
+PID:=
+
+# check for an HPC submission lock file, then try to determine the submission recipe to use
+submit:
+	@if [ -e "$(NXF_SUBMIT)" ]; then echo ">>> ERROR: An instance of the pipeline has already been submitted"; exit 1 ; \
+	else \
+	if grep -q 'phoenix' <<<'$(HOSTNAME)'; then echo  ">>> Submission for phoenix not yet configured";  \
+	elif grep -q 'bigpurple' <<<'$(HOSTNAME)'; then echo ">>> Running submit-bigpurple"; $(MAKE) submit-bigpurple ; \
+	else echo ">>> ERROR: could not automatically determine 'submit' recipe to use, please consult the Makefile"; exit 1 ; fi ; \
+	fi
+
+# submit on Big Purple using SLURM
+# set a submission lock file
+# NOTE: Nextflow locks itself from concurrent instances but need to lock against multiple 'make submit'
+submit-bigpurple:
+	@touch "$(NXF_SUBMIT)" && \
+	sbatch -D "$(ABSDIR)" -o "$(SUBLOG)" -J "$(SUBJOBNAME)" -p "$(SUBQ)" --ntasks-per-node=1 -c "$(SUBTHREADS)" --export=HOSTNAME --wrap='bash -c "make submit-bigpurple-run TIMESTAMP=$(TIMESTAMP) $(SUBEP)"' | tee >(sed 's|[^[:digit:]]*\([[:digit:]]*\).*|\1|' > '$(NXF_JOBFILE)')
+
+# run inside a SLURM sbatch
+# store old pid and node entries in a backup file in case things get messy
+# need to manually set the HOSTNAME here because it changes inside SLURM job
+# TODO: come up with a better method for this ^^
+submit-bigpurple-run:
+	if [ -e "$(NXF_NODEFILE)" -a -e "$(NXF_PIDFILE)" ]; then paste "$(NXF_NODEFILE)" "$(NXF_PIDFILE)" >> $(NXF_SUBMITLOG); fi ; \
+	echo "$${SLURMD_NODENAME}" > "$(NXF_NODEFILE)" && \
+	$(MAKE) run HOSTNAME="bigpurple" LOGID="$(TIMESTAMP)" EP='-bg' && \
+	if [ -e "$(NXF_SUBMIT)" ]; then rm -f "$(NXF_SUBMIT)"; fi
+
+# issue an interupt signal to a process running on a remote server
+# e.g. Nextflow running in a qsub job on a compute node
+kill: PID=$(shell head -1 "$(NXF_PIDFILE)")
+kill: REMOTE=$(shell head -1 "$(NXF_NODEFILE)")
+kill: $(NXF_NODEFILE) $(NXF_PIDFILE)
+	ssh "$(REMOTE)" 'kill $(PID)'
 
 # submit the parent Nextflow process to phoenix HPC as a qsub job
-submit-phoenix-NGS580:
-	@qsub_logdir="logs" ; \
-	mkdir -p "$${qsub_logdir}" ; \
-	job_name="demux-nf" ; \
-	echo 'make run-NGS580 EP="$(EP)" RUNID="$(RUNID)"' | qsub -wd "$$PWD" -o :$${qsub_logdir}/ -e :$${qsub_logdir}/ -j y -N "$$job_name" -q all.q
-
-submit-phoenix-Archer:
-	@qsub_logdir="logs" ; \
-	mkdir -p "$${qsub_logdir}" ; \
-	job_name="demux-nf" ; \
-	echo 'make run-Archer EP="$(EP)" RUNID="$(RUNID)"' | qsub -wd "$$PWD" -o :$${qsub_logdir}/ -e :$${qsub_logdir}/ -j y -N "$$job_name" -q all.q
+# submit-phoenix-NGS580:
+# 	@qsub_logdir="logs" ; \
+# 	mkdir -p "$${qsub_logdir}" ; \
+# 	job_name="demux-nf" ; \
+# 	echo 'make run-NGS580 EP="$(EP)" RUNID="$(RUNID)"' | qsub -wd "$$PWD" -o :$${qsub_logdir}/ -e :$${qsub_logdir}/ -j y -N "$$job_name" -q all.q
+#
+# submit-phoenix-Archer:
+# 	@qsub_logdir="logs" ; \
+# 	mkdir -p "$${qsub_logdir}" ; \
+# 	job_name="demux-nf" ; \
+# 	echo 'make run-Archer EP="$(EP)" RUNID="$(RUNID)"' | qsub -wd "$$PWD" -o :$${qsub_logdir}/ -e :$${qsub_logdir}/ -j y -N "$$job_name" -q all.q
 
 
 # ~~~~~ DELIVERABLE ~~~~~ #
