@@ -188,12 +188,13 @@ process convert_run_params{
     file(run_params_xml_file) from run_params_xml
 
     output:
-    file("RunParameters.tsv") into run_params_tsv
+    file("${output_file}") into run_params_tsv
     val('') into done_convert_run_params
 
     script:
+    output_file = "RunParameters.tsv"
     """
-    RunParametersXML2tsv.py
+    RunParametersXML2tsv.py "${run_params_xml_file}" "${output_file}"
     """
 }
 
