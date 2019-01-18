@@ -115,11 +115,10 @@ check-passed:
 deploy-NGS580: check-NGS580_PIPELINE_DIR check-config-output check-passed
 	RUNID="$$(python -c 'import json; print(json.load(open("$(CONFIG_OUTPUT)")).get("runID", ""))')" && \
 	FASTQDIR="$$(python -c 'import os; print(os.path.realpath("$(PASSED0)"))')" && \
+	SAMPLESHEET="$$(python -c 'import json, os; print(os.path.realpath(json.load(open("$(CONFIG_OUTPUT)")).get("samplesheet", "")))')" && \
 	$(MAKE) check-runID RUNID="$${RUNID}" && \
 	cd "$(NGS580_PIPELINE_DIR)" && \
-	make deploy FASTQDIR="$${FASTQDIR}" RUNID="$${RUNID}"
-
-
+	make deploy FASTQDIR="$${FASTQDIR}" RUNID="$${RUNID}" DEMUX_SAMPLESHEET="$${SAMPLESHEET}"
 
 
 
