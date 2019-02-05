@@ -217,7 +217,7 @@ run-Archer-bigpurple: install
 # submit the parent Nextflow process to HPC as a cluster job
 SUBJOBNAME:=demux-$(DIRNAME)
 SUBLOG:=$(LOGDIRABS)/slurm-%j.$(LOGFILEBASE)
-SUBQ:=cpu_long
+SUBQ:=intellispace
 SUBTHREADS:=4
 SUBEP:=
 NXF_NODEFILE:=.nextflow.node
