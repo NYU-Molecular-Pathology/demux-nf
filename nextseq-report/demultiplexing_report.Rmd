@@ -24,6 +24,8 @@ editor_options:
     # toc_float: true
 # ~~~~~ SETTINGS ~~~~~ #
 knitr::opts_chunk$set(echo = FALSE)
+knitr::opts_chunk$set(fig.width=10)
+knitr::opts_chunk$set(fig.height=10)
 
 # ~~~~~ LOAD PACKAGES ~~~~~ #
 library("ggplot2")
@@ -344,7 +346,7 @@ print(pcnt_undetermined_plot)
 
 ## Read Qualities
 
-```{r, fig.height=12, fig.width=8}
+```{r, fig.height=12}
 print(lane_reads_plot)
 print(pcnt_sample_plot)
 print(pcnt_perfect_barcode_plot)
