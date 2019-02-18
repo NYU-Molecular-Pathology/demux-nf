@@ -218,7 +218,7 @@ run-Archer-bigpurple: install
 SUBJOBNAME:=demux-$(DIRNAME)
 SUBLOG:=$(LOGDIRABS)/slurm-%j.$(LOGFILEBASE)
 SUBQ:=intellispace
-SUBTIME:=--time=01:00:00
+SUBTIME:=--time=1-00:00:00
 SUBTHREADS:=4
 SUBEP:=
 NXF_NODEFILE:=.nextflow.node
