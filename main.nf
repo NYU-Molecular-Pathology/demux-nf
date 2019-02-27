@@ -117,6 +117,7 @@ Channel.from( "${runDir}" ).into { runDir_ch; runDir_ch2 } // dont stage run dir
 Channel.fromPath( params.report_template_dir ).set { report_template_dir }
 
 process validate_run_completion {
+    // make sure that the sequencer is finished sequencing; certain files should exist
     tag "${runDir}"
     executor "local"
     publishDir "${params.outputDir}/", mode: 'copy', overwrite: true
@@ -136,15 +137,42 @@ process validate_run_completion {
     cp ${runDir}/RunCompletionStatus.xml .
     cp ${runDir}/RunParameters.xml .
     """
+}
+
+process sanitize_samplesheet {
+    // strip whitespace errors, carriage returns, BOM, etc., from file
+    tag "${samplesheetFile}"
+    executor "local"
+    stageInMode "copy"
+    publishDir "${params.outputDir}/", mode: 'copy', overwrite: true
+
+    input:
+    file(samplesheetFile) name "input_sheet.csv" from samplesheet_input
+
+    output:
+    file("${default_samplesheet_name}") into (sanitized_samplesheet, sanitized_samplesheet2)
+    file("${runID}-SampleSheet.csv")
+    val('') into done_sanitize_samplesheet
+
+    script:
+    default_samplesheet_name = "SampleSheet.csv"
+    output_samplesheet = "${runID}-SampleSheet.csv"
+    """
+    dos2unix "input_sheet.csv"
+    cp "input_sheet.csv" "${default_samplesheet_name}"
+    cp "input_sheet.csv" "${output_samplesheet}"
+    """
 
 }
 
 process validate_samplesheet {
+    // make sure the sample ID's are properly formatted, etc.
     tag "${samplesheetFile}"
     executor "local"
+    stageInMode "copy"
 
     input:
-    file(samplesheetFile) from samplesheet_input
+    file(samplesheetFile) from sanitized_samplesheet
 
     output:
     file("${samplesheetFile}") into validated_samplesheet
@@ -156,33 +184,12 @@ process validate_samplesheet {
     """
 }
 
-process copy_samplesheet {
-    tag "${samplesheetFile}"
-    executor "local"
-    publishDir "${params.outputDir}/", mode: 'copy', overwrite: true
-
-    input:
-    file(samplesheetFile) name "input_sheet.csv" from validated_samplesheet
-
-    output:
-    file("SampleSheet.csv") into (samplesheet_copy, samplesheet_copy2)
-    file("${runID}-SampleSheet.csv")
-    val('') into done_copy_samplesheet
-
-    script:
-    output_samplesheet = "${runID}-SampleSheet.csv"
-    """
-    cp "input_sheet.csv" SampleSheet.csv
-    cp "input_sheet.csv" "${output_samplesheet}"
-    """
-
-}
-
-
 process convert_run_params{
+    // convert the XML file into a .tsv table
     tag "${run_params_xml_file}"
     publishDir "${params.outputDir}/", mode: 'copy', overwrite: true
     executor "local"
+    stageInMode "copy"
 
     input:
     file(run_params_xml_file) from run_params_xml
@@ -199,11 +206,12 @@ process convert_run_params{
 }
 
 process bcl2fastq {
+    // demultiplex the samples in the sequencing run
     tag "${runDir_path}"
     publishDir "${params.outputDir}/", mode: 'copy', overwrite: true
 
     input:
-    set file(samplesheetFile), val(runDir_path) from samplesheet_copy.combine(runDir_ch2)
+    set file(samplesheetFile), val(runDir_path) from validated_samplesheet.combine(runDir_ch2)
 
     output:
     file("Unaligned") into bcl2fastq_output
@@ -283,7 +291,7 @@ process fastqc {
 // ~~~~~~~~ REPORTING ~~~~~~~ //
 done_validate_run_completion.concat(
     done_validate_samplesheet,
-    done_copy_samplesheet,
+    done_sanitize_samplesheet,
     done_convert_run_params,
     done_bcl2fastq,
     done_fastqc
@@ -357,7 +365,7 @@ process collect_email_attachments {
 
     input:
     val(items) from all_done3.collect() // force it to wait for all steps to finish
-    file(attachments: "*") from samplesheet_copy2.concat(demultiplex_stats_html, demultiplexing_report_html, run_params_tsv, run_RTAComplete_txt, multiqc_report_html ).collect()
+    file(attachments: "*") from sanitized_samplesheet2.concat(demultiplex_stats_html, demultiplexing_report_html, run_params_tsv, run_RTAComplete_txt, multiqc_report_html ).collect()
 
     output:
     file(attachments) into email_attachments
