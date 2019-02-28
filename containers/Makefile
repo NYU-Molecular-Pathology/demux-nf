@@ -52,3 +52,17 @@ sync:
 	@$(MAKE) check-singularityimage
 	@echo 'command:'
 	@echo 'rsync --dry-run -vrhP -e ssh $(IMG) $(USER)@$(REMOTE):$(REMOTEDIR)'
+
+# build Docker container, for testing before creating Singularity container
+DOCKERFILE:=$(VAR)/Dockerfile
+DOCKERREPO:=stevekm/demux-nf
+DOCKERTAG:=$(DOCKERREPO):$(VAR)
+docker-build:
+	@$(MAKE) check-var
+	@$(MAKE) check-var-dir
+	cd $(VAR) && \
+	docker build -t "$(DOCKERTAG)" .
+docker-test:
+	@$(MAKE) check-var
+	@$(MAKE) check-var-dir
+	docker run --rm -ti -v "$$(pwd)/staging:/staging" "$(DOCKERTAG)" bash
