@@ -42,7 +42,7 @@ test:
 	@$(MAKE) check-singularityimage
 	@echo ">>> Starting Vagrant..." && \
 	vagrant up test && \
-	vagrant ssh test -c "singularity shell /vagrant/$(IMG)"
+	vagrant ssh test -c "singularity shell -B /staging /vagrant/$(IMG)"
 
 USER:=$(shell echo $$USER)
 REMOTE:=bigpurple.nyumc.org
