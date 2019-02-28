@@ -48,6 +48,18 @@ Extra parameters to be passed to Nextflow can be supplied with the `EP` argument
 make run EP='--samplesheet SampleSheet.csv --runDir /path/to/sequencer/data/170809_NB501073_0019_AH5FFYBGX3'
 ```
 
+To submit the parent Nextflow pipeline as a job on the HPC cluster:
+
+```
+make submit
+
+# with a different submission queue:
+make submit SUBQ=fn_long
+
+# with a different submission time:
+make submit SUBQ=cpu_long SUBTIME='--time=6-00:00:00'
+```
+
 For alternative `run` methods, consult the `Makefile`.
 
 # Configuration
