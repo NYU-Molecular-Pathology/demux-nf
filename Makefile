@@ -300,6 +300,38 @@ CLIENT=
 deliverable:
 	python bin/deliverable.py "$(CLIENT)" "$(SHEET)"
 
+
+
+
+# ~~~~~ UPLOADS ~~~~~ #
+# make a directory with renamed .fastq files compatible with Philips ISG naming scheme
+# expected naming scheme: <EPIC_ID>_<Run_ID>_<Sample_ID>_<DNA_ID>_R1_001.fastq.gz
+# need to strip out 'S[0-9]*_L001_' from e.g. 'S9_L001_R1_001.fastq.gz'
+outputDir:=output
+uploadsDir:=uploads
+uploadsPath:=$(outputDir)/$(uploadsDir)
+
+Passed0Fastqs:=
+FindPassed0Fastq:=
+ifneq ($(FindPassed0Fastq),)
+Passed0Fastqs:=$(shell find "$(PASSED0)/" -maxdepth 1 -type f -name "*.fastq.gz")
+endif
+check-output:
+	@if [ ! -d "$(outputDir)" ]; then echo ">>> ERROR: outputDir does not exist: $(outputDir)"; exit 1; fi
+$(uploadsPath):
+	mkdir -p "$(uploadsPath)"
+uploads: check-output check-passed $(PASSED0) $(uploadsPath)
+	$(MAKE) uploads-recurse FindPassed0Fastq=1
+uploads-recurse: $(Passed0Fastqs)
+$(Passed0Fastqs):
+	@newfile="$$(basename $@ | sed -e 's|\(_S[0-9]*\)\(_R[12]_001.fastq.gz\)$$|\2|')" ; \
+	newpath="$(uploadsPath)/$${newfile}" ; \
+	cp -via "$@" "$${newpath}"
+.PHONY: $(Passed0Fastqs)
+
+
+
+
 # ~~~~~ FINALIZE ~~~~~ #
 # steps for finalizing the Nextflow pipeline 'output' publishDir and 'work' directories
 # configured for parallel processing with `make finalize -j8`
