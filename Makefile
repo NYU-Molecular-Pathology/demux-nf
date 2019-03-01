@@ -13,12 +13,33 @@ ABSDIR:=$(shell python -c 'import os; print(os.path.realpath("."))')
 HOSTNAME:=$(shell echo $$HOSTNAME)
 RUNID:=
 # e.g.: 180131_NB501073_0032_AHT5F3BGX3
-SEQDIR:=/gpfs/data/molecpathlab/production/quicksilver
-PRODDIR:=/gpfs/data/molecpathlab/production/Demultiplexing
 USER_HOME=$(shell echo "$$HOME")
 USER_DATE:=$(shell date +%s)
-NXF_FRAMEWORK_DIR:=$(USER_HOME)/.nextflow/framework/$(NXF_VER)
+
+# relative locations
+outputDir:=output
+uploadsDir:=uploads
+uploadsPath:=$(outputDir)/$(uploadsDir)
+UNALIGNED_DIR:=$(outputDir)/Unaligned
+PASSED0=$(UNALIGNED_DIR)/passed0
+LOGDIR:=logs
+LOGDIRABS:=$(shell python -c 'import os; print(os.path.realpath("$(LOGDIR)"))')
+LOGID:=$(TIMESTAMP)
+LOGFILEBASE:=log.$(LOGID).out
+LOGFILE:=$(LOGDIR)/$(LOGFILEBASE)
+# Nextflow "publishDir" directory
+publishDir:=$(outputDir)
+# Nextflow "work" directory of items to be removed
+workDir:=work
+# Nextflow trace file
+TRACEFILE:=trace.txt
+
+# system locations
+SEQDIR:=/gpfs/data/molecpathlab/production/quicksilver
+PRODDIR:=/gpfs/data/molecpathlab/production/Demultiplexing
+
 # gets stuck on NFS drive and prevents install command from finishing
+NXF_FRAMEWORK_DIR:=$(USER_HOME)/.nextflow/framework/$(NXF_VER)
 remove-framework:
 	@if [ -e "$(NXF_FRAMEWORK_DIR)" ]; then \
 	new_framework="$(NXF_FRAMEWORK_DIR).$(USER_DATE)" ; \
@@ -99,29 +120,6 @@ passed: check-config-output
 	$(MAKE) check-samplesheet SAMPLESHEET="$${SAMPLESHEET}" && \
 	python bin/pass-run.py "$${SAMPLESHEET}"
 
-# set up a new NGS580 analysis based on this directory results; requires config file
-# location of production NGS580 deployment pipeline for starting new analyses from
-NGS580_PIPELINE_DIR:=/gpfs/data/molecpathlab/pipelines/NGS580-nf
-UNALIGNED_DIR:=output/Unaligned
-PASSED0=$(UNALIGNED_DIR)/passed0
-check-NGS580_PIPELINE_DIR:
-	@if [ ! -d "$(NGS580_PIPELINE_DIR)" ]; then echo ">>> ERROR: NGS580_PIPELINE_DIR does not exist: $(NGS580_PIPELINE_DIR)"; exit 1; fi
-check-config-output:
-	@if [ ! -f "$(CONFIG_OUTPUT)" ]; then echo ">>> ERROR: config file does not exist: $(CONFIG_OUTPUT)"; exit 1 ; fi
-check-runID:
-	@if [ -z "$(RUNID)" ]; then echo ">>> ERROR: invalid RUNID value: $(RUNID)"; exit 1; fi
-check-passed:
-	@if [ ! -e "$(PASSED0)" ]; then echo ">>> ERROR: 'passed0' does not exist: $(PASSED0); Was this run checked & passed?"; exit 1; fi
-deploy-NGS580: check-NGS580_PIPELINE_DIR check-config-output check-passed
-	RUNID="$$(python -c 'import json; print(json.load(open("$(CONFIG_OUTPUT)")).get("runID", ""))')" && \
-	FASTQDIR="$$(python -c 'import os; print(os.path.realpath("$(PASSED0)"))')" && \
-	SAMPLESHEET="$$(python -c 'import json, os; print(os.path.realpath(json.load(open("$(CONFIG_OUTPUT)")).get("samplesheet", "")))')" && \
-	$(MAKE) check-runID RUNID="$${RUNID}" && \
-	cd "$(NGS580_PIPELINE_DIR)" && \
-	make deploy FASTQDIR="$${FASTQDIR}" RUNID="$${RUNID}" DEMUX_SAMPLESHEET="$${SAMPLESHEET}"
-
-
-
 # ~~~~~ UPDATE THIS REPO ~~~~~ #
 update: pull update-submodules update-nextflow
 
@@ -155,12 +153,6 @@ perm:
 
 # ~~~~~ RUN PIPELINE ~~~~~ #
 RESUME:=-resume
-LOGDIR:=logs
-LOGDIRABS:=$(shell python -c 'import os; print(os.path.realpath("$(LOGDIR)"))')
-LOGID:=$(TIMESTAMP)
-LOGFILEBASE:=log.$(LOGID).out
-LOGFILE:=$(LOGDIR)/$(LOGFILEBASE)
-
 # try to detect 'run' config automatically
 _RUN:=
 SYSTEM:=
@@ -307,10 +299,6 @@ deliverable:
 # make a directory with renamed .fastq files compatible with Philips ISG naming scheme
 # expected naming scheme: <EPIC_ID>_<Run_ID>_<Sample_ID>_<DNA_ID>_R1_001.fastq.gz
 # need to strip out 'S[0-9]*_L001_' from e.g. 'S9_L001_R1_001.fastq.gz'
-outputDir:=output
-uploadsDir:=uploads
-uploadsPath:=$(outputDir)/$(uploadsDir)
-
 Passed0Fastqs:=
 FindPassed0Fastq:=
 ifneq ($(FindPassed0Fastq),)
@@ -330,17 +318,33 @@ $(Passed0Fastqs):
 .PHONY: $(Passed0Fastqs)
 
 
+# ~~~~~ DEPLOY NGS580 ~~~~~ #
+# set up a new NGS580 analysis based on this directory results; requires config file
+# location of production NGS580 deployment pipeline for starting new analyses from
+NGS580_PIPELINE_DIR:=/gpfs/data/molecpathlab/pipelines/NGS580-nf
+check-NGS580_PIPELINE_DIR:
+	@if [ ! -d "$(NGS580_PIPELINE_DIR)" ]; then echo ">>> ERROR: NGS580_PIPELINE_DIR does not exist: $(NGS580_PIPELINE_DIR)"; exit 1; fi
+check-config-output:
+	@if [ ! -f "$(CONFIG_OUTPUT)" ]; then echo ">>> ERROR: config file does not exist: $(CONFIG_OUTPUT)"; exit 1 ; fi
+check-runID:
+	@if [ -z "$(RUNID)" ]; then echo ">>> ERROR: invalid RUNID value: $(RUNID)"; exit 1; fi
+check-passed:
+	@if [ ! -e "$(PASSED0)" ]; then echo ">>> ERROR: 'passed0' does not exist: $(PASSED0); Was this run checked & passed?"; exit 1; fi
+
+deploy-NGS580: FASTQDIR:=$(PASSED0)
+deploy-NGS580: check-NGS580_PIPELINE_DIR check-config-output check-passed
+	RUNID="$$(python -c 'import json; print(json.load(open("$(CONFIG_OUTPUT)")).get("runID", ""))')" && \
+	FASTQDIR="$$(python -c 'import os; print(os.path.realpath("$(FASTQDIR)"))')" && \
+	SAMPLESHEET="$$(python -c 'import json, os; print(os.path.realpath(json.load(open("$(CONFIG_OUTPUT)")).get("samplesheet", "")))')" && \
+	$(MAKE) check-runID RUNID="$${RUNID}" && \
+	cd "$(NGS580_PIPELINE_DIR)" && \
+	make deploy FASTQDIR="$${FASTQDIR}" RUNID="$${RUNID}" DEMUX_SAMPLESHEET="$${SAMPLESHEET}"
+
 
 
 # ~~~~~ FINALIZE ~~~~~ #
 # steps for finalizing the Nextflow pipeline 'output' publishDir and 'work' directories
 # configured for parallel processing with `make finalize -j8`
-
-# Nextflow "publishDir" directory
-publishDir:=output
-# Nextflow "work" directory of items to be removed
-workDir:=work
-TRACEFILE:=trace.txt
 
 # remove extraneous work dirs
 # resolve publishDir output symlinks
