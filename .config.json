@@ -1,5 +1,6 @@
 {
     "runDir": null,
+    "demuxDir": null,
     "seqType": null,
     "samplesheet": null,
     "runID": null,

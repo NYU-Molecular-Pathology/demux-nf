@@ -16,10 +16,14 @@ RUNID:=
 USER_HOME=$(shell echo "$$HOME")
 USER_DATE:=$(shell date +%s)
 
+# system locations
+SEQDIR:=/gpfs/data/molecpathlab/production/quicksilver
+PRODDIR:=/gpfs/data/molecpathlab/production/Demultiplexing
+UPLOADSDIR:=/gpfs/data/molecpathlab/production/isg-uploads
+
 # relative locations
 outputDir:=output
 uploadsDir:=uploads
-uploadsPath:=$(outputDir)/$(uploadsDir)
 UNALIGNED_DIR:=$(outputDir)/Unaligned
 PASSED0=$(UNALIGNED_DIR)/passed0
 LOGDIR:=logs
@@ -34,9 +38,6 @@ workDir:=work
 # Nextflow trace file
 TRACEFILE:=trace.txt
 
-# system locations
-SEQDIR:=/gpfs/data/molecpathlab/production/quicksilver
-PRODDIR:=/gpfs/data/molecpathlab/production/Demultiplexing
 
 # gets stuck on NFS drive and prevents install command from finishing
 NXF_FRAMEWORK_DIR:=$(USER_HOME)/.nextflow/framework/$(NXF_VER)
@@ -111,6 +112,8 @@ config: $(CONFIG_OUTPUT)
 	@[ -n "$(RUNDIR)" ] && echo ">>> Updating runDir config" && python config.py --update "$(CONFIG_OUTPUT)" --runDir "$(RUNDIR)" || :
 	@[ -n "$(HOSTNAME)" ] && echo ">>> Updating system config" && python config.py --update "$(CONFIG_OUTPUT)" --system "$(HOSTNAME)" || :
 	@[ -n "$(SEQTYPE)" ] && echo ">>> Updating seqType config" && python config.py --update "$(CONFIG_OUTPUT)" --seqType "$(SEQTYPE)" || :
+	@echo ">>> Updating demuxDir config" && python config.py --add --update "$(CONFIG_OUTPUT)" --demuxDir "$(ABSDIR)"
+
 
 # denote that the run passed QC after manual review of reports
 check-samplesheet:
@@ -306,17 +309,21 @@ Passed0Fastqs:=$(shell find "$(PASSED0)/" -maxdepth 1 -type f -name "*.fastq.gz"
 endif
 check-output:
 	@if [ ! -d "$(outputDir)" ]; then echo ">>> ERROR: outputDir does not exist: $(outputDir)"; exit 1; fi
-$(uploadsPath):
-	mkdir -p "$(uploadsPath)"
-uploads: check-output check-passed $(PASSED0) $(uploadsPath)
-	$(MAKE) uploads-recurse FindPassed0Fastq=1
-uploads-recurse: $(Passed0Fastqs)
+
+uploads: RUNID:=$(shell python -c 'import json; print( json.load(open("$(CONFIG_OUTPUT)")).get("runID", "None") )')
+uploads: uploadsPath:=$(UPLOADSDIR)/$(RUNID)/$(uploadsDir)
+uploads: CONFIG_INPUT:=config.json
+uploads: check-output check-passed check-runID $(PASSED0)
+	mkdir -p "$(uploadsPath)" && \
+	CONFIG_OUTPUT="$(UPLOADSDIR)/$(RUNID)/config.json" && \
+	cp "$(CONFIG_INPUT)" "$${CONFIG_OUTPUT}" && \
+	$(MAKE) uploads-recurse FindPassed0Fastq=1 uploadsPath="$(uploadsPath)" CONFIG_OUTPUT="$${CONFIG_OUTPUT}"
+uploads-recurse: $(Passed0Fastqs) $(CONFIG_OUTPUT)
 $(Passed0Fastqs):
 	@newfile="$$(basename $@ | sed -e 's|\(_S[0-9]*\)\(_R[12]_001.fastq.gz\)$$|\2|')" ; \
 	newpath="$(uploadsPath)/$${newfile}" ; \
 	cp -via "$@" "$${newpath}"
 .PHONY: $(Passed0Fastqs)
-
 
 # ~~~~~ DEPLOY NGS580 ~~~~~ #
 # set up a new NGS580 analysis based on this directory results; requires config file
@@ -328,6 +335,7 @@ check-config-output:
 	@if [ ! -f "$(CONFIG_OUTPUT)" ]; then echo ">>> ERROR: config file does not exist: $(CONFIG_OUTPUT)"; exit 1 ; fi
 check-runID:
 	@if [ -z "$(RUNID)" ]; then echo ">>> ERROR: invalid RUNID value: $(RUNID)"; exit 1; fi
+	@if [ "$(RUNID)" == "None" ]; then printf ">>> ERROR: RUNID is 'None', please specify a different RUNID"; exit 1; fi
 check-passed:
 	@if [ ! -e "$(PASSED0)" ]; then echo ">>> ERROR: 'passed0' does not exist: $(PASSED0); Was this run checked & passed?"; exit 1; fi
 
