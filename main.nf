@@ -151,18 +151,17 @@ process sanitize_samplesheet {
 
     output:
     file("${default_samplesheet_name}") into (sanitized_samplesheet, sanitized_samplesheet2)
-    file("${runID}-SampleSheet.csv")
+    // file("${runID}-SampleSheet.csv")
     val('') into done_sanitize_samplesheet
 
     script:
     default_samplesheet_name = "SampleSheet.csv"
-    output_samplesheet = "${runID}-SampleSheet.csv"
+    // output_samplesheet = "${runID}-SampleSheet.csv"
     """
     dos2unix "input_sheet.csv"
     cp "input_sheet.csv" "${default_samplesheet_name}"
-    cp "input_sheet.csv" "${output_samplesheet}"
     """
-
+    // cp "input_sheet.csv" "${output_samplesheet}"
 }
 
 process validate_samplesheet {
@@ -310,8 +309,8 @@ process multiqc {
     file "multiqc_plots"
 
     script:
-    output_HTML="${runID}-multiqc_report.html"
-    output_pdf="${runID}-multiqc_report.pdf"
+    output_HTML="${runID}.multiqc.report.html"
+    output_pdf="${runID}.multiqc.report.pdf"
     """
     multiqc . --export
     mv multiqc_report.html "${output_HTML}"
@@ -321,7 +320,7 @@ process multiqc {
 process demultiplexing_report {
     tag "${template_dir}"
     executor "local"
-    publishDir "${params.outputDir}/reports", mode: 'copy', overwrite: true
+    publishDir "${params.outputDir}", mode: 'copy', overwrite: true
     stageInMode "copy"
 
     input:
@@ -333,9 +332,9 @@ process demultiplexing_report {
     // file("${report_PDF}")
 
     script:
-    report_RMD="${runID}-demultiplexing_report.Rmd"
-    report_HTML="${runID}-demultiplexing_report.html"
-    report_PDF="${runID}-demultiplexing_report.pdf"
+    report_RMD="${runID}.report.Rmd"
+    report_HTML="${runID}.report.html"
+    report_PDF="${runID}.report.pdf"
     """
     # put the Demultiplex_Stats.htm file inside the report's dir
     mv ${demultiplex_stats} "${template_dir}/"
