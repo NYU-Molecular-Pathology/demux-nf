@@ -213,13 +213,14 @@ process bcl2fastq {
     set file(samplesheetFile), val(runDir_path) from validated_samplesheet.combine(runDir_ch2)
 
     output:
-    file("Unaligned") into bcl2fastq_output
-    file("Unaligned/Demultiplex_Stats.htm") into (demultiplex_stats_html, demultiplex_stats_html2)
-    file("Unaligned/**.fastq.gz") into fastq_output
-    file("Unaligned/*") into bcl2fastq_output_all
+    file("${output_dir}") into bcl2fastq_output
+    file("${output_dir}/Demultiplex_Stats.htm") into (demultiplex_stats_html, demultiplex_stats_html2)
+    file("${output_dir}/**.fastq.gz") into fastq_output
+    file("${output_dir}/*") into bcl2fastq_output_all
     val('') into done_bcl2fastq
 
     script:
+    output_dir = "reads"
     """
     nthreads="\${NSLOTS:-\${NTHREADS:-2}}"
 
@@ -239,11 +240,11 @@ process bcl2fastq {
     --writing-threads 2 \
     --sample-sheet ${samplesheetFile} \
     --runfolder-dir ${runDir_path} \
-    --output-dir ./Unaligned \
+    --output-dir "./${output_dir}" \
     ${params.bcl2fastq_params}
 
     # create Demultiplex_Stats.htm
-    cat Unaligned/Reports/html/*/all/all/all/laneBarcode.html | grep -v "href=" > Unaligned/Demultiplex_Stats.htm
+    cat "${output_dir}"/Reports/html/*/all/all/all/laneBarcode.html | grep -v "href=" > "${output_dir}"/Demultiplex_Stats.htm
     """
 }
 

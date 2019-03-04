@@ -24,8 +24,8 @@ UPLOADSDIR:=/gpfs/data/molecpathlab/production/isg-uploads
 # relative locations
 outputDir:=output
 uploadsDir:=uploads
-UNALIGNED_DIR:=$(outputDir)/Unaligned
-PASSED0=$(UNALIGNED_DIR)/passed0
+READS_DIR:=$(outputDir)/reads
+PASSED0=$(READS_DIR)/passed0
 LOGDIR:=logs
 LOGDIRABS:=$(shell python -c 'import os; print(os.path.realpath("$(LOGDIR)"))')
 LOGID:=$(TIMESTAMP)
