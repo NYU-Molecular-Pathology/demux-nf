@@ -101,8 +101,8 @@ deploy: check-seqdir check-proddir
 CONFIG_INPUT:=.config.json
 CONFIG_OUTPUT:=config.json
 $(CONFIG_OUTPUT):
-	@echo ">>> Creating $(CONFIG_OUTPUT)"
-	@cp "$(CONFIG_INPUT)" "$(CONFIG_OUTPUT)"
+	@echo ">>> Creating $(CONFIG_OUTPUT)" && \
+	cp "$(CONFIG_INPUT)" "$(CONFIG_OUTPUT)"
 
 RUNDIR:=
 SEQTYPE:=
@@ -310,12 +310,13 @@ endif
 check-output:
 	@if [ ! -d "$(outputDir)" ]; then echo ">>> ERROR: outputDir does not exist: $(outputDir)"; exit 1; fi
 
-uploads: RUNID:=$(shell python -c 'import json; print( json.load(open("$(CONFIG_OUTPUT)")).get("runID", "None") )')
+uploads:
 uploads: uploadsPath:=$(UPLOADSDIR)/$(RUNID)/$(uploadsDir)
 uploads: CONFIG_INPUT:=config.json
 uploads: check-output check-passed check-runID $(PASSED0)
 	mkdir -p "$(uploadsPath)" && \
-	CONFIG_OUTPUT="$(UPLOADSDIR)/$(RUNID)/config.json" && \
+	RUNID="$$(python -c 'import json; print( json.load(open("$(CONFIG_OUTPUT)")).get("runID", "None") )')"
+	CONFIG_OUTPUT="$(UPLOADSDIR)/$${RUNID}/config.json" && \
 	cp "$(CONFIG_INPUT)" "$${CONFIG_OUTPUT}" && \
 	$(MAKE) uploads-recurse FindPassed0Fastq=1 uploadsPath="$(uploadsPath)" CONFIG_OUTPUT="$${CONFIG_OUTPUT}"
 uploads-recurse: $(Passed0Fastqs) $(CONFIG_OUTPUT)
