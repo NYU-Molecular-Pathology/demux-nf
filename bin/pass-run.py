@@ -7,7 +7,7 @@ import sys
 import os
 from util import samplesheet
 samplesheet_file = sys.argv[1]
-outputDir = os.path.join("output", "Unaligned")
+outputDir = os.path.join("output", "reads")
 
 sheet_obj = samplesheet.IEMFile(path = samplesheet_file)
 
