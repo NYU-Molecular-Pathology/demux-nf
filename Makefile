@@ -215,6 +215,7 @@ SUBLOG:=$(LOGDIRABS)/slurm-%j.$(LOGFILEBASE)
 SUBQ:=intellispace
 SUBTIME:=--time=2-00:00:00
 SUBTHREADS:=8
+SUBMEM:=64G
 SUBEP:=
 NXF_NODEFILE:=.nextflow.node
 NXF_JOBFILE:=.nextflow.jobid
@@ -238,7 +239,7 @@ submit:
 # NOTE: Nextflow locks itself from concurrent instances but need to lock against multiple 'make submit'
 submit-bigpurple:
 	@touch "$(NXF_SUBMIT)" && \
-	sbatch -D "$(ABSDIR)" -o "$(SUBLOG)" -J "$(SUBJOBNAME)" -p fn_long --time=2-00:00:00 --ntasks-per-node=1 -c 8 --mem=64G --export=HOSTNAME --wrap='bash -c "make submit-bigpurple-run TIMESTAMP=$(TIMESTAMP) $(SUBEP)"' | tee >(sed 's|[^[:digit:]]*\([[:digit:]]*\).*|\1|' > '$(NXF_JOBFILE)')
+	sbatch -D "$(ABSDIR)" -o "$(SUBLOG)" -J "$(SUBJOBNAME)" -p "$(SUBQ)" $(SUBTIME) --ntasks-per-node=1 -c "$(SUBTHREADS)" --mem=$(SUBMEM) --export=HOSTNAME --wrap='bash -c "make submit-bigpurple-run TIMESTAMP=$(TIMESTAMP) $(SUBEP)"' | tee >(sed 's|[^[:digit:]]*\([[:digit:]]*\).*|\1|' > '$(NXF_JOBFILE)')
 
 # run inside a SLURM sbatch
 # store old pid and node entries in a backup file in case things get messy
