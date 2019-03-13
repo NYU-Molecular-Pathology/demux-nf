@@ -155,9 +155,9 @@ update-submodules: remote
 # make all dirs full group accessible
 # make all files group read/write
 fix-permissions:
-	find . -type f -executable -exec chmod -v g+X {} \;
-	find . -type d -exec chmod -v g+rwxs {} \;
-	find . -type f -exec chmod -v g+rw {} \;
+	find . -type f -executable -exec chmod ug+X {} \;
+	find . -type d -exec chmod ug+rwxs {} \;
+	find . -type f -exec chmod ug+rw {} \;
 
 USERGROUP:=molecpathlab
 fix-group:
