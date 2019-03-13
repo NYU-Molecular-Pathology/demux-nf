@@ -150,9 +150,9 @@ update-submodules: remote
 	@git submodule update --recursive --remote --init
 
 # fix permissions on this directory
-perm:
-	chmod -R g+rw *
-	find . -type f -name "*.py" -exec chmod g+X {} \;
+fix-permissions:
+	chmod -vR g+rw *
+	find . -type f -executable -exec chmod -v g+X {} \;
 
 # ~~~~~ RUN PIPELINE ~~~~~ #
 RESUME:=-resume
