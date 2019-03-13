@@ -245,6 +245,12 @@ process bcl2fastq {
 
     # create Demultiplex_Stats.htm
     cat "${output_dir}"/Reports/html/*/all/all/all/laneBarcode.html | grep -v "href=" > "${output_dir}"/Demultiplex_Stats.htm
+
+    # make md5sums
+    for item in \$(find "${output_dir}/" -type f -name "*.fastq.gz"); do
+    output_md5="\${item}.md5.txt"
+    md5sum "\${item}" > \${output_md5}
+    done
     """
 }
 
