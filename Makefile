@@ -181,8 +181,8 @@ run-recurse:
 	@echo "SYSTEM: $${SYSTEM}, SEQTYPE: $${SEQTYPE}" ; \
 	if grep -q 'phoenix' <<<"$${SYSTEM}" && grep -q 'NGS580' <<<"$${SEQTYPE}" ; then echo ">>> Running run-NGS580-phoenix"; $(MAKE) run-NGS580-phoenix ; \
 	elif grep -q 'phoenix' <<<"$${SYSTEM}" && grep -q 'Archer' <<<"$${SEQTYPE}" ; then echo ">>> Running run-Archer-phoenix"; $(MAKE) run-Archer-phoenix ; \
-	elif grep -q 'bigpurple' <<<"$${SYSTEM}" && grep -q 'NGS580' <<<"$${SEQTYPE}" ; then echo ">>> Running run-NGS580-bigpurple"; $(MAKE) run-NGS580-bigpurple ; \
-	elif grep -q 'bigpurple' <<<"$${SYSTEM}" && grep -q 'Archer' <<<"$${SEQTYPE}" ; then echo ">>> Running run-Archer-bigpurple"; $(MAKE) run-Archer-bigpurple ; \
+	elif grep -q 'bigpurple' <<<"$${SYSTEM}" && grep -q 'NGS580' <<<"$${SEQTYPE}" ; then echo ">>> Running run-NGS580-bigpurple"; $(MAKE) run-NGS580-bigpurple fix-permissions fix-group ; \
+	elif grep -q 'bigpurple' <<<"$${SYSTEM}" && grep -q 'Archer' <<<"$${SEQTYPE}" ; then echo ">>> Running run-Archer-bigpurple"; $(MAKE) run-Archer-bigpurple fix-permissions fix-group ; \
 	else echo ">>> ERROR: could not determine 'run' method to use"; exit 1; fi ; \
 
 # methods to use for each specific profile config
@@ -208,7 +208,6 @@ run-NGS580-bigpurple: install
 	elif [ -z "$(RUNID)" ]; then \
 	./nextflow run main.nf $(RESUME) -with-notification -with-timeline -with-trace -with-report -profile bigpurple,NGS580 $(EP) ; \
 	fi
-# $(MAKE) perm
 
 run-Archer-bigpurple: install
 	if [ -n "$(RUNID)" ]; then \
@@ -216,7 +215,6 @@ run-Archer-bigpurple: install
 	elif [ -z "$(RUNID)" ]; then \
 	./nextflow run main.nf $(RESUME) -with-notification -with-timeline -with-trace -with-report -profile bigpurple,Archer $(EP) ; \
 	fi
-# $(MAKE) perm
 
 # submit the parent Nextflow process to HPC as a cluster job
 SUBJOBNAME:=demux-$(DIRNAME)
