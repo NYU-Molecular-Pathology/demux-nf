@@ -156,12 +156,12 @@ update-submodules: remote
 # make all files group read/write
 fix-permissions:
 	find . -type f -executable -exec chmod -v g+X {} \;
-	find . -type d -exec chmod -v g+rwxs {} \\;
-	find . -type f -exec chmod -v g+rw {} \\;
+	find . -type d -exec chmod -v g+rwxs {} \;
+	find . -type f -exec chmod -v g+rw {} \;
 
 USERGROUP:=molecpathlab
 fix-group:
-	find . ! -group "$(USERGROUP)" -exec chgrp "$(USERGROUP)" {} \\;
+	find . ! -group "$(USERGROUP)" -exec chgrp "$(USERGROUP)" {} \;
 
 # ~~~~~ RUN PIPELINE ~~~~~ #
 RESUME:=-resume
