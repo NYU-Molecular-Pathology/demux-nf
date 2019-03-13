@@ -155,13 +155,13 @@ update-submodules: remote
 # make all dirs full group accessible
 # make all files group read/write
 fix-permissions:
-	find . -type f -executable -exec chmod ug+X {} \;
-	find . -type d -exec chmod ug+rwxs {} \;
-	find . -type f -exec chmod ug+rw {} \;
+	@find . -type f -executable -exec chmod ug+X {} \;
+	@find . -type d -exec chmod ug+rwxs {} \;
+	@find . -type f -exec chmod ug+rw {} \;
 
 USERGROUP:=molecpathlab
 fix-group:
-	find . ! -group "$(USERGROUP)" -exec chgrp "$(USERGROUP)" {} \;
+	@find . ! -group "$(USERGROUP)" -exec chgrp "$(USERGROUP)" {} \;
 
 # ~~~~~ RUN PIPELINE ~~~~~ #
 RESUME:=-resume
