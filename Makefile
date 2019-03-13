@@ -96,6 +96,7 @@ deploy: check-seqdir check-proddir
 	fi && \
 	echo ">>> Creating config file..." && \
 	$(MAKE) config CONFIG_OUTPUT="$${demultiplexing_output_dir}/$(CONFIG_OUTPUT)" SAMPLESHEET="$$(basename "$(SAMPLESHEET)")" RUNDIR="$${sequencing_run_results_dir}" && \
+	( cd "$${demultiplexing_output_dir}" && make fix-permissions fix-group ) && \
 	echo ">>> Demultiplexing directory prepared: $${demultiplexing_output_dir}"
 
 CONFIG_INPUT:=.config.json
@@ -150,9 +151,17 @@ update-submodules: remote
 	@git submodule update --recursive --remote --init
 
 # fix permissions on this directory
+# make all executables group executable
+# make all dirs full group accessible
+# make all files group read/write
 fix-permissions:
-	chmod -vR g+rw *
 	find . -type f -executable -exec chmod -v g+X {} \;
+	find . -type d -exec chmod -v g+rwxs {} \\;
+	find . -type f -exec chmod -v g+rw {} \\;
+
+USERGROUP:=molecpathlab
+fix-group:
+	find . ! -group "$(USERGROUP)" -exec chgrp "$(USERGROUP)" {} \\;
 
 # ~~~~~ RUN PIPELINE ~~~~~ #
 RESUME:=-resume
