@@ -318,20 +318,20 @@ endif
 check-output:
 	@if [ ! -d "$(outputDir)" ]; then echo ">>> ERROR: outputDir does not exist: $(outputDir)"; exit 1; fi
 
-uploads:
-uploads: uploadsPath:=$(UPLOADSDIR)/$(RUNID)/$(uploadsDir)
+uploads: RUNID=$(shell python -c 'import json; print( json.load(open("$(CONFIG_OUTPUT)")).get("runID", "") )')
 uploads: CONFIG_INPUT:=config.json
-uploads: check-output check-passed check-runID $(PASSED0)
-	mkdir -p "$(uploadsPath)" && \
-	RUNID="$$(python -c 'import json; print( json.load(open("$(CONFIG_OUTPUT)")).get("runID", "None") )')"
-	CONFIG_OUTPUT="$(UPLOADSDIR)/$${RUNID}/config.json" && \
-	cp "$(CONFIG_INPUT)" "$${CONFIG_OUTPUT}" && \
-	$(MAKE) uploads-recurse FindPassed0Fastq=1 uploadsPath="$(uploadsPath)" CONFIG_OUTPUT="$${CONFIG_OUTPUT}"
-uploads-recurse: $(Passed0Fastqs) $(CONFIG_OUTPUT)
+uploads: check-output check-passed $(PASSED0)
+	$(MAKE) check-runID RUNID="$(RUNID)" && \
+	uploadsPath="$(UPLOADSDIR)/$(RUNID)/uploads" && \
+	mkdir -p "$${uploadsPath}" && \
+	$(MAKE) uploads-recurse FindPassed0Fastq=1 uploadsPath="$${uploadsPath}"
+
+uploads-recurse: $(Passed0Fastqs)
 $(Passed0Fastqs):
-	@newfile="$$(basename $@ | sed -e 's|\(_S[0-9]*\)\(_R[12]_001.fastq.gz\)$$|\2|')" ; \
-	newpath="$(uploadsPath)/$${newfile}" ; \
-	cp -via "$@" "$${newpath}"
+	newfile="$$(basename $@ | sed -e 's|\(_S[0-9]*\)\(_R[12]_001.fastq.gz\)$$|\2|')" && \
+	newpath="$(uploadsPath)/$${newfile}" && \
+	rsync -vrthP "$@" "$${newpath}"
+	# cp -via "$@" "$${newpath}"
 .PHONY: $(Passed0Fastqs)
 
 # ~~~~~ DEPLOY NGS580 ~~~~~ #
