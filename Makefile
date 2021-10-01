@@ -358,7 +358,28 @@ deploy-NGS580: check-NGS580_PIPELINE_DIR check-config-output check-passed
 	make deploy FASTQDIR="$${FASTQDIR}" RUNID="$${RUNID}" DEMUX_SAMPLESHEET="$${SAMPLESHEET}"
 
 
+# ~~~~~ DEPLOY NGS607 ~~~~~ #
+# set up a new NGS607 analysis based on this directory results; requires config file
+# location of production NGS607 deployment pipeline for starting new analyses from
+NGS607_PIPELINE_DIR:=/gpfs/data/molecpathlab/pipelines/LG-PACT
+check-NGS607_PIPELINE_DIR:
+	@if [ ! -d "$(NGS607_PIPELINE_DIR)" ]; then echo ">>> ERROR: NGS607_PIPELINE_DIR does not exist: $(NGS607_PIPELINE_DIR)"; exit 1; fi
+check-config-output:
+	@if [ ! -f "$(CONFIG_OUTPUT)" ]; then echo ">>> ERROR: config file does not exist: $(CONFIG_OUTPUT)"; exit 1 ; fi
+check-runID:
+	@if [ -z "$(RUNID)" ]; then echo ">>> ERROR: invalid RUNID value: $(RUNID)"; exit 1; fi
+	@if [ "$(RUNID)" == "None" ]; then printf ">>> ERROR: RUNID is 'None', please specify a different RUNID"; exit 1; fi
+check-passed:
+	@if [ ! -e "$(PASSED0)" ]; then echo ">>> ERROR: 'passed0' does not exist: $(PASSED0); Was this run checked & passed?"; exit 1; fi
 
+deploy-NGS607: FASTQDIR:=$(PASSED0)
+deploy-NGS607: check-NGS607_PIPELINE_DIR check-config-output check-passed
+	RUNID="$$(python -c 'import json; print(json.load(open("$(CONFIG_OUTPUT)")).get("runID", ""))')" && \
+	FASTQDIR="$$(python -c 'import os; print(os.path.realpath("$(FASTQDIR)"))')" && \
+	SAMPLESHEET="$$(python -c 'import json, os; print(os.path.realpath(json.load(open("$(CONFIG_OUTPUT)")).get("samplesheet", "")))')" && \
+	$(MAKE) check-runID RUNID="$${RUNID}" && \
+	cd "$(NGS607_PIPELINE_DIR)" && \
+	make deploy FASTQDIR="$${FASTQDIR}" RUNID="$${RUNID}" DEMUX_SAMPLESHEET="$${SAMPLESHEET}"
 # ~~~~~ FINALIZE ~~~~~ #
 # steps for finalizing the Nextflow pipeline 'output' publishDir and 'work' directories
 # configured for parallel processing with `make finalize -j8`
