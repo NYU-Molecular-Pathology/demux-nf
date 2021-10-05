@@ -182,6 +182,7 @@ run-recurse:
 	if grep -q 'phoenix' <<<"$${SYSTEM}" && grep -q 'NGS580' <<<"$${SEQTYPE}" ; then echo ">>> Running run-NGS580-phoenix"; $(MAKE) run-NGS580-phoenix ; \
 	elif grep -q 'phoenix' <<<"$${SYSTEM}" && grep -q 'Archer' <<<"$${SEQTYPE}" ; then echo ">>> Running run-Archer-phoenix"; $(MAKE) run-Archer-phoenix ; \
 	elif grep -q 'bigpurple' <<<"$${SYSTEM}" && grep -q 'NGS580' <<<"$${SEQTYPE}" ; then echo ">>> Running run-NGS580-bigpurple"; $(MAKE) run-NGS580-bigpurple fix-permissions fix-group ; \
+	elif grep -q 'bigpurple' <<<"$${SYSTEM}" && grep -q 'NGS607' <<<"$${SEQTYPE}" ; then echo ">>> Running run-NGS607-bigpurple"; $(MAKE) run-NGS607-bigpurple fix-permissions fix-group ; \
 	elif grep -q 'bigpurple' <<<"$${SYSTEM}" && grep -q 'Archer' <<<"$${SEQTYPE}" ; then echo ">>> Running run-Archer-bigpurple"; $(MAKE) run-Archer-bigpurple fix-permissions fix-group ; \
 	else echo ">>> ERROR: could not determine 'run' method to use"; exit 1; fi ; \
 
@@ -207,6 +208,13 @@ run-NGS580-bigpurple: install
 	./nextflow run main.nf $(RESUME) -with-notification -with-timeline -with-trace -with-report -profile bigpurple,NGS580 --runID $(RUNID) $(EP) ; \
 	elif [ -z "$(RUNID)" ]; then \
 	./nextflow run main.nf $(RESUME) -with-notification -with-timeline -with-trace -with-report -profile bigpurple,NGS580 $(EP) ; \
+	fi
+
+run-NGS607-bigpurple: install
+	if [ -n "$(RUNID)" ]; then \
+	./nextflow run main.nf $(RESUME) -with-notification -with-timeline -with-trace -with-report -profile bigpurple,NGS607 --runID $(RUNID) $(EP) ; \
+	elif [ -z "$(RUNID)" ]; then \
+	./nextflow run main.nf $(RESUME) -with-notification -with-timeline -with-trace -with-report -profile bigpurple,NGS607 $(EP) ; \
 	fi
 
 run-Archer-bigpurple: install
