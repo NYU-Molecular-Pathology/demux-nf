@@ -19,7 +19,7 @@ USER_DATE:=$(shell date +%s)
 # system locations
 SEQDIR:=/gpfs/data/molecpathlab/production/quicksilver
 PRODDIR:=/gpfs/data/molecpathlab/production/Demultiplexing
-UPLOADSDIR:=/gpfs/data/molecpathlab/production/isg-uploads
+UPLOADSDIR:=/gpfs/data/molecpathlab/production/isg-uploads_v62/PROD
 
 # relative locations
 outputDir:=output
