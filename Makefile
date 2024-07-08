@@ -20,6 +20,7 @@ USER_DATE:=$(shell date +%s)
 SEQDIR:=/gpfs/data/molecpathlab/production/quicksilver
 PRODDIR:=/gpfs/data/molecpathlab/production/Demultiplexing
 UPLOADSDIR:=/gpfs/data/molecpathlab/production/isg-uploads_v62/PROD
+APIDIR:=/gpfs/data/molecpathlab/bin/ArcherDX/UploadArcherFastqs.py
 
 # relative locations
 outputDir:=output
@@ -93,6 +94,7 @@ deploy: check-seqdir check-proddir
 	if [ "$$(basename "$(SAMPLESHEET)")" != SampleSheet.csv ]; then \
 	( cd "$${demultiplexing_output_dir}" && ln -s "$$(basename $(SAMPLESHEET))" SampleSheet.csv ) ; \
 	fi ; \
+	cp "$(APIDIR)" "$${demultiplexing_output_dir}/bin" ; \
 	fi && \
 	echo ">>> Creating config file..." && \
 	$(MAKE) config CONFIG_OUTPUT="$${demultiplexing_output_dir}/$(CONFIG_OUTPUT)" SAMPLESHEET="$$(basename "$(SAMPLESHEET)")" RUNDIR="$${sequencing_run_results_dir}" && \
