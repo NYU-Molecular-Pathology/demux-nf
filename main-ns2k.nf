@@ -240,7 +240,7 @@ process bcl2fastq_ns2k {
     --sample-sheet ${samplesheetFile} \
     --runfolder-dir ${runDir_path} \
     --output-dir "./${output_dir}" \
-    ${params.bcl2fastq_ns2k_params}
+    ${params.bcl2fastq_params}
 
     # create Demultiplex_Stats.htm
     cat "${output_dir}"/Reports/html/*/all/all/all/laneBarcode.html | grep -v "href=" > "${output_dir}"/Demultiplex_Stats.htm
