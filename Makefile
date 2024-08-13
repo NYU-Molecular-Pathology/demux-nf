@@ -187,7 +187,7 @@ run-recurse:
 	elif grep -q 'bigpurple' <<<"$${SYSTEM}" && grep -q 'NGS607' <<<"$${SEQTYPE}" ; then echo ">>> Running run-NGS607-bigpurple"; $(MAKE) run-NGS607-bigpurple fix-permissions fix-group ; \
 	elif grep -q 'bigpurple' <<<"$${SYSTEM}" && grep -q 'NS2K' <<<"$${SEQTYPE}" ; then echo ">>> Running run-NS2K-bigpurple"; $(MAKE) run-NS2K-bigpurple fix-permissions fix-group ; \
 	elif grep -q 'bigpurple' <<<"$${SYSTEM}" && grep -q 'Archer' <<<"$${SEQTYPE}" ; then echo ">>> Running run-Archer-bigpurple"; $(MAKE) run-Archer-bigpurple fix-permissions fix-group ; \
-	elif grep -q 'bigpurple' <<<"$${SYSTEM}" && grep -q 'ArcherNS2K' <<<"$${SEQTYPE}" ; then echo ">>> Running run-ArcherNS2K-bigpurple"; $(MAKE) run-ArcherNS2K-bigpurple fix-permissions fix-group ; \
+	elif grep -q 'bigpurple' <<<"$${SYSTEM}" && grep -q 'A2K' <<<"$${SEQTYPE}" ; then echo ">>> Running run-ArcherNS2K-bigpurple"; $(MAKE) run-ArcherNS2K-bigpurple fix-permissions fix-group ; \
 	else echo ">>> ERROR: could not determine 'run' method to use"; exit 1; fi ; \
 
 # methods to use for each specific profile config
