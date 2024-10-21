@@ -16,6 +16,9 @@ if ( demuxConfigFile_obj.exists() ) {
     demuxConfig = jsonSlurper.parseText(demuxConfigJSON)
 }
 
+// Need to get seqType, to start the API upload for only Archer assay
+params.seqType = "${demuxConfig.seqType}"
+
 // check for Run ID
 // 0. use CLI passed arg
 // 1. check for config.json values
@@ -174,7 +177,7 @@ process validate_samplesheet {
     file(samplesheetFile) from sanitized_samplesheet
 
     output:
-    file("${samplesheetFile}") into validated_samplesheet
+    file("${samplesheetFile}") into (validated_samplesheet, validated_samplesheet2)
     val('') into done_validate_samplesheet
 
     script:
@@ -214,6 +217,7 @@ process bcl2fastq_ns2k {
 
     output:
     file("${output_dir}") into bcl2fastq_output
+    file("${output_dir}") into path_to_fastq
     file("${output_dir}/Demultiplex_Stats.htm") into (demultiplex_stats_html, demultiplex_stats_html2)
     file("${output_dir}/**.fastq.gz") into fastq_output
     file("${output_dir}/*") into bcl2fastq_output_all
@@ -300,7 +304,7 @@ done_validate_run_completion.concat(
     done_convert_run_params,
     done_bcl2fastq,
     done_fastqc
-    ).into { all_done1; all_done2; all_done3 }
+    ).into { all_done1; all_done2; all_done3; all_done4 }
 
 process multiqc {
     publishDir "${params.outputDir}/reports", mode: 'copy', overwrite: true
@@ -378,6 +382,25 @@ process collect_email_attachments {
     script:
     """
     echo "[collect_email_attachments] files to be attached: ${attachments}"
+    """
+}
+
+//~~~~~~~~~~~~~~~ RESTAPI Archer Job submission ~~~~~~~~~~~~~~~~~~~ //
+
+process api_job_submission {    
+    input:
+    val(items) from all_done4.collect()
+    file(samplesheetFile) from validated_samplesheet2
+    file(output_dir) from path_to_fastq
+// Run the API upload only when assay type is Archer
+    when:
+    "${params.seqType}" == "A2K"
+
+    script:
+    """
+    # get name and seq file params for the submit job #
+    job_name="\$(cat "${samplesheetFile}" | grep "**-MGFS*" | cut -d',' -f2 | head -n 1)"
+    UploadArcherFastqs.py -j "\${job_name}" -d "${output_dir}/ArcherDx_Run/"
     """
 }
 
