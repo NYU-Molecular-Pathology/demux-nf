@@ -126,6 +126,14 @@ passed: check-config-output
 	$(MAKE) check-samplesheet SAMPLESHEET="$${SAMPLESHEET}" && \
 	python bin/pass-run.py "$${SAMPLESHEET}"
 
+#### ~~~~~~~~~~~ Sophia Genetics specific ~~~~~~~~~~~ ####
+# passed recipe for SG with new samplesheet naming scheme
+passedSG: check-config-output
+	@SAMPLESHEET="$$(python -c 'import json; print(json.load(open("$(CONFIG_OUTPUT)")).get("samplesheet", ""))')" && \
+	$(MAKE) check-samplesheet SAMPLESHEET="$${SAMPLESHEET}" && \
+	python bin/pass-run-sg.py "$${SAMPLESHEET}"
+
+
 # ~~~~~ UPDATE THIS REPO ~~~~~ #
 update: pull update-submodules update-nextflow
 
