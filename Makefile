@@ -21,6 +21,7 @@ SEQDIR:=/gpfs/data/molecpathlab/production/quicksilver
 PRODDIR:=/gpfs/data/molecpathlab/production/Demultiplexing
 UPLOADSDIR:=/gpfs/data/molecpathlab/production/isg-uploads_v62/PROD
 APIDIR:=/gpfs/data/molecpathlab/bin/ArcherDX/UploadArcherFastqs.py
+DBCONFIG:=/gpfs/data/molecpathlab/bin/pact_mysql/db_config.py
 
 # relative locations
 outputDir:=output
@@ -125,13 +126,6 @@ passed: check-config-output
 	@SAMPLESHEET="$$(python -c 'import json; print(json.load(open("$(CONFIG_OUTPUT)")).get("samplesheet", ""))')" && \
 	$(MAKE) check-samplesheet SAMPLESHEET="$${SAMPLESHEET}" && \
 	python bin/pass-run.py "$${SAMPLESHEET}"
-
-#### ~~~~~~~~~~~ Sophia Genetics specific ~~~~~~~~~~~ ####
-# passed recipe for SG with new samplesheet naming scheme
-passedSG: check-config-output
-	@SAMPLESHEET="$$(python -c 'import json; print(json.load(open("$(CONFIG_OUTPUT)")).get("samplesheet", ""))')" && \
-	$(MAKE) check-samplesheet SAMPLESHEET="$${SAMPLESHEET}" && \
-	python bin/pass-run-sg.py "$${SAMPLESHEET}"
 
 
 # ~~~~~ UPDATE THIS REPO ~~~~~ #
@@ -414,7 +408,8 @@ deploy-NGS607: check-NGS607_PIPELINE_DIR check-config-output check-passed
 	SAMPLESHEET="$$(python -c 'import json, os; print(os.path.realpath(json.load(open("$(CONFIG_OUTPUT)")).get("samplesheet", "")))')" && \
 	$(MAKE) check-runID RUNID="$${RUNID}" && \
 	cd "$(NGS607_PIPELINE_DIR)" && \
-	make deploy FASTQDIR="$${FASTQDIR}" RUNID="$${RUNID}" DEMUX_SAMPLESHEET="$${SAMPLESHEET}"
+	make deploy FASTQDIR="$${FASTQDIR}" RUNID="$${RUNID}" DEMUX_SAMPLESHEET="$${SAMPLESHEET}" && \
+	cp "$(DBCONFIG)" "/gpfs/data/molecpathlab/production/NGS607/$${RUNID}/bin" ; 
 # ~~~~~ FINALIZE ~~~~~ #
 # steps for finalizing the Nextflow pipeline 'output' publishDir and 'work' directories
 # configured for parallel processing with `make finalize -j8`
