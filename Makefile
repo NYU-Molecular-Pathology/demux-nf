@@ -158,10 +158,16 @@ update-submodules: remote
 # make all executables group executable
 # make all dirs full group accessible
 # make all files group read/write
+# fix-permissions:
+# 	@find . -type f -executable -exec chmod ug+X {} \;
+# 	@find . -type d -exec chmod ug+rwxs {} \;
+# 	@find . -type f -exec chmod ug+rw {} \;
+
 fix-permissions:
 	@find . -type f -executable -exec chmod ug+X {} \;
 	@find . -type d -exec chmod ug+rwxs {} \;
 	@find . -type f -exec chmod ug+rw {} \;
+	@if [ -d "$(outputDir)" ]; then chmod -R g+rwx "$(outputDir)"; fi
 
 USERGROUP:=molecpathlab
 fix-group:
