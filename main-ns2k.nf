@@ -207,7 +207,7 @@ process convert_run_params{
     """
 }
 
-process bcl2fastq_ns2k {
+process bclconvert {
     // demultiplex the samples in the sequencing run
     tag "${runDir_path}"
     publishDir "${params.outputDir}/", mode: 'copy', overwrite: true
@@ -216,38 +216,28 @@ process bcl2fastq_ns2k {
     set file(samplesheetFile), val(runDir_path) from validated_samplesheet.combine(runDir_ch2)
 
     output:
-    file("${output_dir}") into bcl2fastq_output
+    file("${output_dir}") into bclconvert_output
     file("${output_dir}") into path_to_fastq
-    file("${output_dir}/Demultiplex_Stats.htm") into (demultiplex_stats_html, demultiplex_stats_html2)
     file("${output_dir}/**.fastq.gz") into fastq_output
-    file("${output_dir}/*") into bcl2fastq_output_all
-    val('') into done_bcl2fastq
+    file("${output_dir}/*") into bclconvert_output_all
+    val('') into done_bclconvert
 
     script:
     output_dir = "reads"
     """
     nthreads="\${NSLOTS:-\${NTHREADS:-2}}"
 
-    # 20% of threads for demult as per Illumina manual
-    demult_threads="\$(( \$nthreads*2/10 ))"
-    # at least 2 threads
-    [ "\${demult_threads}" -lt "2" ] && demult_threads=2
-
-    echo "[bcl2fastq]: \$(which bcl2fastq) running with \${nthreads} threads and \${demult_threads} demultiplexing threads"
-
-    bcl2fastq \
-    --min-log-level WARNING \
-    --fastq-compression-level 8 \
-    --loading-threads 2 \
-    --processing-threads \${nthreads:-2} \
-    --writing-threads 2 \
+    # BCLConvert recommends no separate demult thread split
+    # Use all threads for conversion
+    echo "[bclconvert]: \$(which bcl-convert) running with \${nthreads} threads"
+    
+    bcl-convert \
     --sample-sheet ${samplesheetFile} \
-    --runfolder-dir ${runDir_path} \
+    --bcl-input-directory ${runDir_path} \
     --output-dir "./${output_dir}" \
-    ${params.bcl2fastq_params}
-
-    # create Demultiplex_Stats.htm
-    cat "${output_dir}"/Reports/html/*/all/all/all/laneBarcode.html | grep -v "href=" > "${output_dir}"/Demultiplex_Stats.htm
+    --bcl-num-conversion-threads \${nthreads} \
+    --bcl-num-compression-threads \${nthreads} \
+    --bcl-num-decompression-threads \${nthreads}
 
     # make md5sums
     for item in \$(find "${output_dir}/" -type f -name "*.fastq.gz"); do
@@ -258,7 +248,7 @@ process bcl2fastq_ns2k {
 }
 
 // filter out everything that is not a directory in order to find demultiplexing output
-bcl2fastq_output_all.flatMap()
+bclconvert_output_all.flatMap()
                     .filter { item ->
                         item.isDirectory()
                     }
@@ -266,7 +256,7 @@ bcl2fastq_output_all.flatMap()
                         def basename = item.getName()
                         basename != 'Stats' && basename != 'Reports'
                     }
-                    .set { bcl2fastq_project_dirs }
+                    .set { bclconvert_project_dirs }
 
 // filter out 'Undetermined' fastq files
 fastq_output.flatMap()
@@ -302,7 +292,7 @@ done_validate_run_completion.concat(
     done_validate_samplesheet,
     done_sanitize_samplesheet,
     done_convert_run_params,
-    done_bcl2fastq,
+    done_bclconvert,
     done_fastqc
     ).into { all_done1; all_done2; all_done3; all_done4 }
 
@@ -346,22 +336,11 @@ process demultiplexing_report {
     report_HTML="${runID}.report.html"
     report_PDF="${runID}.report.pdf"
     """
-    # put the Demultiplex_Stats.htm file inside the report's dir
-    mv ${demultiplex_stats} "${template_dir}/"
-
-    # rename the report template file to match the desired output filename
-    # cp "${template_dir}/demultiplexing_report.Rmd" "${template_dir}/${report_RMD}"
-
     # compile to HTML
-    Rscript -e 'rmarkdown::render(input = "${template_dir}/demultiplexing_report.Rmd", output_format = "html_document", output_file = "${report_HTML}")'
-
-    # compile to PDF
-    # Rscript -e 'rmarkdown::render(input = "${template_dir}/demultiplexing_report.Rmd", output_format = "pdf_document", output_file = "${report_PDF}")'
-    # ! LaTeX Error: File `ifluatex.sty' not found.
+    Rscript -e 'rmarkdown::render(input = "${template_dir}/demultiplexing_report_bclconvert.Rmd", output_format = "html_document", output_file = "${report_HTML}")'
 
     # move the output files to the current directory
     mv "${template_dir}/${report_HTML}" .
-    # mv "${template_dir}/${report_PDF}" .
     """
 }
 
