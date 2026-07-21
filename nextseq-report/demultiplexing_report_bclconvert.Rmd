@@ -5,6 +5,7 @@ date: "`r format(Sys.time(), '%B %d, %Y')`"
 params:
   reports_dir: "Reports"
   run_id: ""
+  project: ""
 output:
   html_document:
     css: styles.css
@@ -86,9 +87,16 @@ barcode_display <- vapply(seq_len(nrow(demux)), function(i) {
   gsub("-", "+", idx)
 }, character(1))
 
+project_name <- params$project_name
+if (project_name == "" || is.na(project_name)) {
+  ss <- read.csv(file.path(reports_dir, "SampleSheet.csv"), check.names = FALSE)
+  hit <- ss[grepl("^RunName$", ss[,1]), , drop = FALSE]
+  project_name <- if (nrow(hit)) as.character(hit[1, 2]) else "Unknown"
+}
+
 lane_summary_df <- data.frame(
   Lane = demux$Lane,
-  Project = Samplesheet[grepl("RunName", Samplesheet$`[Header]`),][,2],
+  Project = project_name,
   Sample = demux$SampleID,
   `Barcode sequence` = barcode_display,
   `PF Clusters` = as.numeric(demux[["# Reads"]]),
