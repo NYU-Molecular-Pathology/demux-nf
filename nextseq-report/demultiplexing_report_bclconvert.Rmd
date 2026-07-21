@@ -1,0 +1,307 @@
+---
+title: "Demultiplexing Report (BCL Convert)"
+author: "`r tryCatch(system('whoami', intern = TRUE)[1], error = function(e) 'unknown')`"
+date: "`r format(Sys.time(), '%B %d, %Y')`"
+params:
+  reports_dir: "Reports"
+  run_id: ""
+output:
+  html_document:
+    css: styles.css
+    keep_md: yes
+    number_sections: true
+    toc: true
+    toc_depth: 3
+editor_options:
+  chunk_output_type: console
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+knitr::opts_chunk$set(fig.width = 10)
+knitr::opts_chunk$set(fig.height = 10)
+
+library("ggplot2")
+library("plyr")
+library("knitr")
+
+mycat <- function(text) {
+  cat(gsub(pattern = "\n", replacement = "  \n", x = text))
+}
+
+make_numeric <- function(x) {
+  x <- as.numeric(gsub(pattern = ",", replacement = "", x = x))
+  return(x)
+}
+
+`%||%` <- function(a, b) if (!is.null(a) && length(a) && nzchar(as.character(a)[1])) a else b
+
+reports_dir <- params$reports_dir
+if (!dir.exists(reports_dir)) {
+  stop("reports_dir not found: ", reports_dir, call. = FALSE)
+}
+
+# run_id is a normal variable — params is read-only in knitr; do not assign to params$run_id
+ri <- file.path(reports_dir, "RunInfo.xml")
+run_id <- as.character(params$run_id %||% "")
+if (run_id == "" && file.exists(ri)) {
+  rl <- readLines(ri, warn = FALSE)
+  hit <- grep("<Run Id=", rl, value = TRUE)
+  if (length(hit)) {
+    run_id <- sub('.*<Run Id="([^"]+)".*', "\\1", hit[1])
+  }
+}
+
+demux <- read.csv(file.path(reports_dir, "Demultiplex_Stats.csv"),
+                  check.names = FALSE, stringsAsFactors = FALSE)
+qm <- read.csv(file.path(reports_dir, "Quality_Metrics.csv"),
+               check.names = FALSE, stringsAsFactors = FALSE)
+Samplesheet <- read.csv(file.path(reports_dir, "SampleSheet.csv"),
+               check.names = FALSE, stringsAsFactors = FALSE)
+
+mq_mean_col <- "Mean Quality Score (PF)"
+
+qm_agg <- ddply(qm, c("Lane", "SampleID"), function(df) {
+  y <- sum(as.numeric(df$Yield))
+  yq <- sum(as.numeric(df$YieldQ30))
+  mq <- as.numeric(df[[mq_mean_col]])
+  wy <- as.numeric(df$Yield)
+  data.frame(
+    Yield_Mbases = y / 1e6,
+    pcnt_Q30 = ifelse(y > 0, yq / y * 100, NA_real_),
+    Mean_Q = ifelse(y > 0, sum(wy * mq) / y, NA_real_)
+  )
+})
+
+demux_key <- paste(demux$Lane, demux$SampleID, sep = ":")
+qm_key <- paste(qm_agg$Lane, qm_agg$SampleID, sep = ":")
+m <- match(demux_key, qm_key)
+demux$Yield_Mbases <- qm_agg$Yield_Mbases[m]
+demux$pcnt_Q30 <- qm_agg$pcnt_Q30[m]
+demux$Mean_Q <- qm_agg$Mean_Q[m]
+
+barcode_display <- vapply(seq_len(nrow(demux)), function(i) {
+  idx <- demux$Index[i]
+  if (is.na(idx) || idx == "") return("")
+  gsub("-", "+", idx)
+}, character(1))
+
+lane_summary_df <- data.frame(
+  Lane = demux$Lane,
+  Project = Samplesheet[grepl("RunName", Samplesheet$`[Header]`),][,2],
+  Sample = demux$SampleID,
+  `Barcode sequence` = barcode_display,
+  `PF Clusters` = as.numeric(demux[["# Reads"]]),
+  `% of thelane` = as.numeric(demux[["% Reads"]]) * 100,
+  `% Perfectbarcode` = as.numeric(demux[["% Perfect Index Reads"]]) * 100,
+  `% One mismatchbarcode` = as.numeric(demux[["% One Mismatch Index Reads"]]) * 100,
+  `Yield (Mbases)` = demux$Yield_Mbases,
+  `% PFClusters` = 100,
+  `% >= Q30bases` = demux$pcnt_Q30,
+  `Mean QualityScore` = demux$Mean_Q,
+  check.names = FALSE,
+  stringsAsFactors = FALSE
+)
+
+lane_summary_numeric_cols <- c(
+  "PF Clusters", "% of thelane", "% Perfectbarcode", "% One mismatchbarcode",
+  "Yield (Mbases)", "% PFClusters", "% >= Q30bases", "Mean QualityScore"
+)
+
+lane_summary_df <- cbind(
+  lane_summary_df[, !colnames(lane_summary_df) %in% lane_summary_numeric_cols, drop = FALSE],
+  apply(lane_summary_df[, lane_summary_numeric_cols, drop = FALSE], 2, make_numeric)
+)
+
+colnames(lane_summary_df) <- gsub(" ", "_", colnames(lane_summary_df), fixed = TRUE)
+colnames(lane_summary_df) <- gsub("%", "pcnt", colnames(lane_summary_df), fixed = TRUE)
+colnames(lane_summary_df) <- gsub(">=", "greaterthan_equal", colnames(lane_summary_df), fixed = TRUE)
+colnames(lane_summary_df) <- gsub("(", "_", colnames(lane_summary_df), fixed = TRUE)
+colnames(lane_summary_df) <- gsub(")", "", colnames(lane_summary_df), fixed = TRUE)
+
+top_unknown_barcodes_df <- read.csv(
+  file.path(reports_dir, "Top_Unknown_Barcodes.csv"),
+  check.names = FALSE,
+  stringsAsFactors = FALSE
+)
+
+undetermined_max_pcnt <- 10
+quality_score_min <- 30
+sample_reads_min <- 10
+```
+
+```{r lane_summary}
+read_sum_df <- aggregate(PF_Clusters ~ Sample, data = lane_summary_df, FUN = sum)
+undetermined_summary <- lane_summary_df[lane_summary_df[["Sample"]] == "Undetermined", ]
+lane_sample_summary <- lane_summary_df[lane_summary_df[["Sample"]] != "Undetermined", ]
+
+lane_reads_plot <- ggplot(lane_summary_df, aes(x = Sample, y = PF_Clusters / 1000000)) +
+  geom_bar(aes(fill = Lane), position = "dodge", stat = "identity") +
+  ylab("Millions of Reads") +
+  xlab("Sample") +
+  ggtitle("Barcode Matched Read Count per Sample per Lane") +
+  coord_flip()
+
+sample_reads_plot <- ggplot(read_sum_df, aes(x = Sample, y = PF_Clusters / 1000000)) +
+  geom_bar(position = "dodge", stat = "identity") +
+  ylab("Millions of Reads") +
+  xlab("Sample") +
+  ggtitle("Total Barcode Matched Read Count per Sample") +
+  coord_flip() +
+  geom_hline(yintercept = sample_reads_min, color = "red")
+
+pcnt_undetermined_plot <- ggplot(undetermined_summary, aes(x = Lane, y = pcnt_of_thelane)) +
+  geom_bar(position = "dodge", stat = "identity") +
+  ggtitle("Percent Undetermined Reads per Lane") +
+  ylab("Percent of Lane") +
+  xlab("Lane") +
+  scale_y_continuous(limits = c(0, 100), breaks = seq(0, 100, 10)) +
+  geom_hline(yintercept = undetermined_max_pcnt, color = "red")
+
+pcnt_sample_plot <- ggplot(lane_sample_summary, aes(x = Sample, y = pcnt_of_thelane)) +
+  geom_bar(aes(fill = Lane), position = "dodge", stat = "identity") +
+  ggtitle("Percent Sample Reads per Lane") +
+  ylab("Percent of Lane") +
+  xlab("Lane") +
+  coord_flip()
+
+lane_quality_score_plot <- ggplot(lane_summary_df, aes(x = Sample, y = Mean_QualityScore)) +
+  geom_bar(aes(fill = Lane), position = "dodge", stat = "identity") +
+  ylab("Mean Quality Score") +
+  xlab("Sample") +
+  ggtitle("Mean Quality Score per Sample per Lane") +
+  coord_flip() +
+  geom_hline(yintercept = quality_score_min, color = "red")
+
+pcnt_perfect_barcode_plot <- ggplot(lane_sample_summary, aes(x = Sample, y = pcnt_Perfectbarcode)) +
+  geom_bar(aes(fill = Lane), position = "dodge", stat = "identity") +
+  ylab("Percent Perfect Barcode") +
+  xlab("Sample") +
+  ggtitle("Percent of Reads with Perfect Barcodes per Sample per Lane") +
+  coord_flip()
+```
+
+```{r sample_table}
+run_project <- unique(as.character(lane_sample_summary[["Project"]]))
+summary_cols <- c("Lane", "Project", "Sample", "Barcode_sequence")
+run_lanes <- unique(as.character(lane_sample_summary[["Lane"]]))
+run_summary <- list()
+for (lane in run_lanes) {
+  lane_df <- lane_sample_summary[which(as.character(lane_sample_summary[["Lane"]]) == lane), summary_cols]
+  run_summary[[lane]] <- lane_df
+}
+print_lane_df <- function(df, name) {
+  mycat(sprintf("### Lane %s \n\n", name))
+  print(kable(df, row.names = FALSE))
+}
+```
+
+```{r avg_undetermined_rating}
+avg_undetermined <- mean(undetermined_summary[["pcnt_of_thelane"]])
+print_undetermined_rating <- function(avg_undetermined) {
+  determined_reads <- 100 - avg_undetermined
+  if (determined_reads > 90) {
+    print_big_color_boxed_text(message = "Undetermined Reads Score: A", border_color = "blue", text_color = "blue")
+  } else if (determined_reads > 80) {
+    print_big_color_boxed_text(message = "Undetermined Reads Score: B", border_color = "green", text_color = "green")
+  } else if (determined_reads > 70) {
+    print_big_color_boxed_text(message = "Undetermined Reads Score: C", border_color = "yellow", text_color = "yellow")
+  } else if (determined_reads > 60) {
+    print_big_color_boxed_text(message = "Undetermined Reads Score: D", border_color = "red", text_color = "red")
+  } else {
+    print_big_color_boxed_text(message = "Undetermined Reads Score: F", border_color = "maroon", text_color = "maroon")
+  }
+}
+print_big_color_boxed_text <- function(message, border_color, text_color) {
+  mycat(sprintf(
+    '<p style="border:3px; border-style:solid; border-color:%s; padding: 1em;"><span style="color:%s"><big><big><big>%s</big></big></big></span></p>',
+    border_color, text_color, message
+  ))
+}
+```
+
+# Summary
+
+```{r, results='asis'}
+if (nzchar(run_id)) {
+  mycat(sprintf("**Run ID:** %s  \n\n", run_id))
+}
+```
+
+Project:
+
+```{r}
+mycat(run_project)
+```
+
+## Samples {.tabset .tabset-pills}
+
+```{r, results='asis'}
+for (i in seq_along(names(run_summary))) {
+  name <- names(run_summary)[i]
+  df <- run_summary[i]
+  print_lane_df(df = df, name = name)
+}
+```
+
+## Sample Metrics
+
+```{r}
+print(sample_reads_plot)
+```
+
+- Each sample must have at least `r sample_reads_min` million reads to qualify for NGS580 panel analysis.
+
+```{r, results='asis'}
+kable(read_sum_df)
+```
+
+# Lane Metrics
+
+## Undetermined Reads
+
+```{r, results='asis'}
+print_undetermined_rating(avg_undetermined = avg_undetermined)
+```
+
+```{r}
+print(pcnt_undetermined_plot)
+```
+
+- Each lane must have less than `r undetermined_max_pcnt`% undetermined reads to qualify for NGS580 panel analysis.
+
+## Read Qualities
+
+```{r, fig.height=12}
+print(lane_reads_plot)
+print(pcnt_sample_plot)
+print(pcnt_perfect_barcode_plot)
+print(lane_quality_score_plot)
+```
+
+- Each sample & lane must have a mean quality score of at least `r quality_score_min` to qualify for NGS580 panel analysis.
+
+# Top Unknown Barcodes
+
+```{r, results='asis'}
+kable(head(top_unknown_barcodes_df, 10), row.names = FALSE)
+```
+
+```{r, results='asis'}
+if (nrow(top_unknown_barcodes_df) > 10) {
+  mycat(sprintf("\n\n*(Showing first 10 of %d rows.)*\n", nrow(top_unknown_barcodes_df)))
+}
+```
+
+# System Information
+
+```{r}
+mycat(sprintf("System:\n%s\n%s",
+              tryCatch(system("hostname", intern = TRUE)[1], error = function(e) "NA"),
+              tryCatch(system("uname -srv", intern = TRUE)[1], error = function(e) "NA")))
+mycat(sprintf("System user:\n%s", tryCatch(system("whoami", intern = TRUE)[1], error = function(e) "NA")))
+mycat(sprintf("System location:\n%s", tryCatch(getwd(), error = function(e) "NA")))
+mycat(sprintf("BCL Convert reports directory:\n%s", normalizePath(reports_dir)))
+mycat(sprintf("Time and Date of report creation:\n%s", format(Sys.time())))
+sessionInfo()
+```
