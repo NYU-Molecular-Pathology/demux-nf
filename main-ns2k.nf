@@ -220,6 +220,7 @@ process bclconvert {
     file("${output_dir}") into path_to_fastq
     file("${output_dir}/**.fastq.gz") into fastq_output
     file("${output_dir}/*") into bclconvert_output_all
+    file("${output_dir}/Reports") into (bclconvert_reports, bclconvert_reports2)
     val('') into done_bclconvert
 
     script:
@@ -237,7 +238,8 @@ process bclconvert {
     --output-dir "./${output_dir}" \
     --bcl-num-conversion-threads \${nthreads} \
     --bcl-num-compression-threads \${nthreads} \
-    --bcl-num-decompression-threads \${nthreads}
+    --bcl-num-decompression-threads \${nthreads} \
+    ${params.bclconvert_params}
 
     # make md5sums
     for item in \$(find "${output_dir}/" -type f -name "*.fastq.gz"); do
@@ -325,8 +327,7 @@ process demultiplexing_report {
 
     input:
     val(items) from all_done2.collect() // force it to wait for all steps to finish
-    set file(template_dir), file(demultiplex_stats) from report_template_dir.combine(demultiplex_stats_html2)
-
+    set file(template_dir), file(reports_dir) from report_template_dir.combine(bclconvert_reports)
     output:
     file("${report_HTML}") into demultiplexing_report_html
     // file("${report_PDF}")
@@ -336,8 +337,16 @@ process demultiplexing_report {
     report_HTML="${runID}.report.html"
     report_PDF="${runID}.report.pdf"
     """
+    # Stage BCL Convert reports beside the Rmd template
+    cp -r "${reports_dir}" "${template_dir}/Reports"
+    
     # compile to HTML
-    Rscript -e 'rmarkdown::render(input = "${template_dir}/demultiplexing_report_bclconvert.Rmd", output_format = "html_document", output_file = "${report_HTML}")'
+    Rscript -e 'rmarkdown::render(input = "${template_dir}/demultiplexing_report_bclconvert.Rmd", output_format = "html_document", 
+        output_file = "${report_HTML}",
+        params = list(
+            reports_dir = "${template_dir}/Reports",
+            run_id = "${runID}",
+            project_name = ""))'
 
     # move the output files to the current directory
     mv "${template_dir}/${report_HTML}" .
@@ -353,7 +362,7 @@ process collect_email_attachments {
 
     input:
     val(items) from all_done3.collect() // force it to wait for all steps to finish
-    file(attachments: "*") from sanitized_samplesheet2.concat(demultiplex_stats_html, demultiplexing_report_html, run_params_tsv, run_RTAComplete_txt, multiqc_report_html ).collect()
+    file(attachments: "*") from sanitized_samplesheet2.concat(demultiplexing_report_html, run_params_tsv, run_RTAComplete_txt, multiqc_report_html ).collect()
 
     output:
     file(attachments) into email_attachments
@@ -378,7 +387,7 @@ process api_job_submission {
     script:
     """
     # get name and seq file params for the submit job #
-    job_name="\$(cat "${samplesheetFile}" | grep "**-MGFS*" | cut -d',' -f2 | head -n 1)"
+    job_name="$(grep '^RunName,' "${samplesheetFile}" | cut -d',' -f2 | head -n 1)"
     UploadArcherFastqs.py -j "\${job_name}" -d "${output_dir}/ArcherDx_Run/"
     """
 }
