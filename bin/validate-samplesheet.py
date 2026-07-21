@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 """
-Runs validation checking on the provided Illumina samplesheet file for bcl2fastq
+Runs validation checking on the provided Illumina samplesheet file for bclconvert
 """
 import sys
 from util import samplesheet_bclconvert
