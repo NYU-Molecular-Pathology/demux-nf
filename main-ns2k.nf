@@ -346,7 +346,7 @@ process demultiplexing_report {
         params = list(
             reports_dir = "${template_dir}/Reports",
             run_id = "${runID}",
-            project_name = ""))'
+            project = ""))'
 
     # move the output files to the current directory
     mv "${template_dir}/${report_HTML}" .
@@ -387,7 +387,7 @@ process api_job_submission {
     script:
     """
     # get name and seq file params for the submit job #
-    job_name="$(grep '^RunName,' "${samplesheetFile}" | cut -d',' -f2 | head -n 1)"
+    job_name="\$(grep '^RunName,' "${samplesheetFile}" | cut -d',' -f2 | head -n 1)"
     UploadArcherFastqs.py -j "\${job_name}" -d "${output_dir}/ArcherDx_Run/"
     """
 }
