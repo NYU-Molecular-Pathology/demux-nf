@@ -5,7 +5,7 @@ date: "`r format(Sys.time(), '%B %d, %Y')`"
 params:
   reports_dir: "Reports"
   run_id: ""
-  project: ""
+  project_name: ""
 output:
   html_document:
     css: styles.css
