@@ -220,7 +220,7 @@ process bclconvert {
     file("${output_dir}") into path_to_fastq
     file("${output_dir}/**.fastq.gz") into fastq_output
     file("${output_dir}/*") into bclconvert_output_all
-    file("${output_dir}/Reports") into (bclconvert_reports, bclconvert_reports2)
+    file("${output_dir}/Reports") into (bclconvert_reports)
     val('') into done_bclconvert
 
     script:
@@ -341,12 +341,7 @@ process demultiplexing_report {
     cp -r "${reports_dir}" "${template_dir}/Reports"
     
     # compile to HTML
-    Rscript -e 'rmarkdown::render(input = "${template_dir}/demultiplexing_report_bclconvert.Rmd", output_format = "html_document", 
-        output_file = "${report_HTML}",
-        params = list(
-            reports_dir = "${template_dir}/Reports",
-            run_id = "${runID}",
-            project = ""))'
+    Rscript -e 'rmarkdown::render(input = "${template_dir}/demultiplexing_report_bclconvert.Rmd", output_format = "html_document", output_file = "${report_HTML}", params = list(reports_dir = "Reports", run_id = "${runID}", project_name = ""))'
 
     # move the output files to the current directory
     mv "${template_dir}/${report_HTML}" .
