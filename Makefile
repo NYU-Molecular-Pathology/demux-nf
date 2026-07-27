@@ -20,7 +20,7 @@ USER_DATE:=$(shell date +%s)
 SEQDIR:=/gpfs/data/molecpathlab/production/quicksilver
 PRODDIR:=/gpfs/data/molecpathlab/production/Demultiplexing
 UPLOADSDIR:=/gpfs/data/molecpathlab/production/isg-uploads_v62/PROD
-APIDIR:=/gpfs/data/molecpathlab/bin/ArcherDX/UploadArcherFastqs.py
+APIDIR:=/gpfs/data/molecpathlab/bin/ArcherDX/UploadArcherFastqs_V3.py
 
 # relative locations
 outputDir:=output
@@ -150,7 +150,7 @@ update-nextflow:
 # pull the latest version of all submodules
 update-submodules: remote
 	@echo ">>> Updating git submodules"
-	@git submodule update --recursive --remote --init
+	@git submodule update --recursive --init
 
 # fix permissions on this directory
 # make all executables group executable
