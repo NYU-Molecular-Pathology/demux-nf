@@ -383,7 +383,7 @@ process api_job_submission {
     """
     # get name and seq file params for the submit job #
     job_name="\$(grep '^RunName,' "${samplesheetFile}" | cut -d',' -f2 | head -n 1)"
-    UploadArcherFastqs.py -j "\${job_name}" -d "${output_dir}/ArcherDx_Run/"
+    UploadArcherFastqs_V3.py -j "\${job_name}" -d "${output_dir}/ArcherDx_Run/"
     """
 }
 
