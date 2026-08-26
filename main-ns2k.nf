@@ -277,15 +277,21 @@ process fastqc {
     file(fastq) from fastq_filtered
 
     output:
-    file("${output_html}")
+    file("${output_html}") into done_fastqc
     file("${output_zip}") into fastqc_zips
-    val("${output_html}") into done_fastqc
+    // val("${output_html}") into done_fastqc
 
     script:
     output_html = "${fastq}".replaceFirst(/.fastq.gz$/, "_fastqc.html")
     output_zip = "${fastq}".replaceFirst(/.fastq.gz$/, "_fastqc.zip")
     """
-    fastqc -o . "${fastq}"
+    if zcat "${fastq}" | head -n 1 | grep -q .; then
+        fastqc -o . "${fastq}"
+    else
+        echo "Skipping FastQC for ${fastq}: file is empty"
+        touch "${output_html}"
+        touch "${output_zip}"
+    fi
     """
 }
 
